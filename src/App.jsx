@@ -61,6 +61,8 @@ export default function App() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const lookupInputRef = useRef(null);
   const [showBackupBanner, setShowBackupBanner] = useState(false);
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+  const waitingSWRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -83,6 +85,30 @@ export default function App() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, contacts, myInfo, msgTemplate }));
     } catch {}
   }, [contacts, myInfo, msgTemplate]);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").then((reg) => {
+      function trackWaiting(sw) {
+        if (!sw || !navigator.serviceWorker.controller) return;
+        waitingSWRef.current = sw;
+        setShowUpdateBanner(true);
+      }
+      if (reg.waiting) trackWaiting(reg.waiting);
+      reg.addEventListener("updatefound", () => {
+        const sw = reg.installing;
+        sw.addEventListener("statechange", () => {
+          if (sw.state === "installed") trackWaiting(sw);
+        });
+      });
+    });
+    navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload());
+  }, []);
+
+  function applyUpdate() {
+    waitingSWRef.current?.postMessage({ type: "SKIP_WAITING" });
+    setShowUpdateBanner(false);
+  }
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -258,6 +284,19 @@ export default function App() {
       {toast && (
         <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#c0392b" : "#1e7e5a", color: "#fff", padding: "10px 20px", borderRadius: 10, zIndex: 999, fontSize: 14, fontWeight: 500, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }}>
           {toast.msg}
+        </div>
+      )}
+
+      {/* SW update banner */}
+      {showUpdateBanner && (
+        <div data-testid="update-banner" style={{ background: "#003a5a", borderBottom: "1px solid #006090", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, fontSize: 13, color: "#60c0f0", lineHeight: 1.4 }}>
+            🆕 New version available
+          </div>
+          <button data-testid="update-banner-apply" onClick={applyUpdate}
+            style={{ background: "#60c0f0", color: "#001a2e", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+            Tap to update
+          </button>
         </div>
       )}
 
