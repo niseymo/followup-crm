@@ -1,0 +1,51 @@
+name: Bug Report
+description: Something is broken or not behaving as expected
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I tap "Text Now" on an overdue contact, the SMS body is empty.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: The pre-written message template should fill in.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Add a contact named "Test"
+        2. Set follow-up to "Tomorrow"
+        3. Tap "Text Now"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      options:
+        - iPhone (Safari)
+        - iPhone (Chrome)
+        - Android (Chrome)
+        - Desktop browser
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, console errors, etc.
