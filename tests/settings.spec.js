@@ -185,6 +185,39 @@ test.describe('Backup reminder banner', () => {
   })
 })
 
+// ─── Theme toggle ───────────────────────────────────────────────────────────
+
+test.describe('Theme toggle', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await clearStorage(page)
+  })
+
+  test('switching to light theme changes data-theme attribute', async ({ page }) => {
+    await page.getByTestId('settings-btn').tap()
+    await page.getByTestId('theme-light').tap()
+    await page.getByRole('button', { name: 'Done' }).tap()
+    await expect(page.getByTestId('app-root')).toHaveAttribute('data-theme', 'light')
+  })
+
+  test('switching to dark theme changes data-theme attribute', async ({ page }) => {
+    await page.getByTestId('settings-btn').tap()
+    await page.getByTestId('theme-dark').tap()
+    await page.getByRole('button', { name: 'Done' }).tap()
+    await expect(page.getByTestId('app-root')).toHaveAttribute('data-theme', 'dark')
+  })
+
+  test('theme preference persists across reload', async ({ page }) => {
+    await page.getByTestId('settings-btn').tap()
+    await page.getByTestId('theme-light').tap()
+    await page.getByRole('button', { name: 'Done' }).tap()
+
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByTestId('app-root')).toHaveAttribute('data-theme', 'light')
+  })
+})
+
 // ─── Share Card / vCard ──────────────────────────────────────────────────────
 
 test.describe('Share Card vCard generation', () => {
