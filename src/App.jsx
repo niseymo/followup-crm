@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import QRCode from "qrcode";
 
 const STORAGE_KEY = "furniture_crm_v1";
 const DISMISS_KEY = "followup_backup_dismissed_until";
@@ -102,6 +103,8 @@ export default function App() {
   const [showBackupBanner, setShowBackupBanner] = useState(false);
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const waitingSWRef = useRef(null);
+  const [showQR, setShowQR] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState(null);
 
   const effectiveTheme = themeMode === "auto"
     ? (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark")
@@ -338,6 +341,17 @@ export default function App() {
     return lines.join("\r\n");
   }
 
+  async function openQR() {
+    const vcf = buildVCard();
+    try {
+      const url = await QRCode.toDataURL(vcf, { width: 280, margin: 2, color: { dark: th.text, light: th.surface } });
+      setQrDataUrl(url);
+      setShowQR(true);
+    } catch {
+      showToast("Could not generate QR code", "error");
+    }
+  }
+
   async function shareCard() {
     const vcf = buildVCard();
     const blob = new Blob([vcf], { type: "text/vcard" });
@@ -435,6 +449,9 @@ export default function App() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
+            <button data-testid="qr-btn" onClick={openQR} style={{ background: th.btnAltBg, color: th.text, border: `1px solid ${th.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 16 }} title="Show QR code">
+              𝗤𝗥
+            </button>
             <button onClick={shareCard} style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 600 }}>
               Share Card
             </button>
@@ -457,6 +474,28 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {showQR && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => setShowQR(false)}>
+          <div data-testid="qr-modal" style={{ background: th.surface, borderRadius: 20, padding: 28, textAlign: "center", maxWidth: 340, width: "100%" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: "#d4a853", marginBottom: 4 }}>Scan to Add Contact</div>
+            <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 20 }}>
+              {myInfo.name || "Your contact"}{myInfo.store ? ` · ${myInfo.store}` : ""}
+            </div>
+            {qrDataUrl && (
+              <img data-testid="qr-image" src={qrDataUrl} alt="Contact QR code" style={{ width: 252, height: 252, borderRadius: 12, display: "block", margin: "0 auto 20px" }} />
+            )}
+            <div style={{ fontSize: 11, color: th.textDim, marginBottom: 20, lineHeight: 1.5 }}>
+              Customer scans this with their camera app to save your contact info directly to their phone.
+            </div>
+            <button onClick={() => setShowQR(false)}
+              style={{ width: "100%", background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 600 }}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Settings Modal */}
       {showMyInfo && (
