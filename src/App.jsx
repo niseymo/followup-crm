@@ -476,6 +476,9 @@ export default function App() {
                   <a href={smsLink(c.phone, c.name)} onClick={() => markTexted(c.id)} style={{ flex: 1, minWidth: 80, background: c.texted ? "#1e3a2a" : "#1e4a3a", color: c.texted ? "#5a9a7a" : "#2ecc71", border: `1px solid ${c.texted ? "#2a5a3a" : "#2ecc71"}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, fontWeight: 600, textAlign: "center", textDecoration: "none" }}>
                     {c.texted ? "✓ Texted" : "📱 Text Now"}
                   </a>
+                  <a data-testid={`call-${c.id}`} href={`tel:${c.phone}`} style={{ background: "#1a2a3a", color: "#60a0e0", border: "1px solid #2a3a5a", borderRadius: 8, padding: "8px 10px", fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center" }} title="Call">
+                    📞
+                  </a>
                   <button onClick={() => editContact(c)} style={{ flex: 1, minWidth: 60, background: "#252535", color: "#a0a0c0", border: "1px solid #2a2a3a", borderRadius: 8, padding: "8px 10px", fontSize: 12, fontWeight: 600 }}>
                     Edit
                   </button>

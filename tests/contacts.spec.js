@@ -141,4 +141,13 @@ test.describe('Contact Management', () => {
     await seedContact(page, { name: 'Consent Check' })
     await expect(page.getByText(/Consent: in-person/)).toBeVisible()
   })
+
+  // ─── Tap to call ────────────────────────────────────────────────────────────
+
+  test('call button has correct tel: href for the contact phone', async ({ page }) => {
+    await seedContact(page, { name: 'Call Test', phone: '5556667777', id: 'call-test-id' })
+    const callLink = page.getByTestId('call-call-test-id')
+    await expect(callLink).toBeVisible()
+    await expect(callLink).toHaveAttribute('href', 'tel:5556667777')
+  })
 })
