@@ -241,13 +241,38 @@ export default function App() {
     return `sms:${phone}?body=${encodeURIComponent(buildMessage(name))}`;
   }
 
-  function shareCard() {
-    const text = `${myInfo.name}\n${myInfo.title}${myInfo.store ? ` · ${myInfo.store}` : ""}\n📞 ${myInfo.phone}${myInfo.email ? `\n✉️ ${myInfo.email}` : ""}`;
-    if (navigator.share) {
-      navigator.share({ title: "My Contact Info", text });
+  function buildVCard() {
+    const lines = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      `FN:${myInfo.name || ""}`,
+      `TITLE:${myInfo.title || ""}`,
+      myInfo.store ? `ORG:${myInfo.store}` : null,
+      myInfo.phone ? `TEL;TYPE=CELL:${myInfo.phone}` : null,
+      myInfo.email ? `EMAIL:${myInfo.email}` : null,
+      "END:VCARD",
+    ].filter(Boolean);
+    return lines.join("\r\n");
+  }
+
+  async function shareCard() {
+    const vcf = buildVCard();
+    const blob = new Blob([vcf], { type: "text/vcard" });
+    const file = new File([blob], `${myInfo.name || "contact"}.vcf`, { type: "text/vcard" });
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: myInfo.name || "Contact" });
+    } else if (navigator.share) {
+      const text = `${myInfo.name}\n${myInfo.title}${myInfo.store ? ` · ${myInfo.store}` : ""}\n📞 ${myInfo.phone}${myInfo.email ? `\n✉️ ${myInfo.email}` : ""}`;
+      await navigator.share({ title: "My Contact Info", text });
     } else {
-      navigator.clipboard?.writeText(text);
-      showToast("Contact info copied!");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Contact card downloaded ✓");
     }
   }
 

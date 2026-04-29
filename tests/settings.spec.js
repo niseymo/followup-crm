@@ -184,3 +184,39 @@ test.describe('Backup reminder banner', () => {
     await expect(page.getByText('Settings')).toBeVisible()
   })
 })
+
+// ─── Share Card / vCard ──────────────────────────────────────────────────────
+
+test.describe('Share Card vCard generation', () => {
+  test('Share Card downloads a .vcf file on non-share-capable browser', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => {
+      localStorage.clear()
+      localStorage.setItem('furniture_crm_v1', JSON.stringify({
+        contacts: [],
+        myInfo: { name: 'Alex Nguyen', title: 'Sales Consultant', store: 'Luxe Furnishings', phone: '5551239876', email: 'alex@luxe.com' },
+        msgTemplate: '',
+      }))
+      // Remove navigator.share so the fallback download path runs
+      Object.defineProperty(navigator, 'share', { value: undefined, configurable: true })
+    })
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Share Card' }).tap(),
+    ])
+
+    expect(download.suggestedFilename()).toMatch(/\.vcf$/)
+    const path = await download.path()
+    const { readFileSync } = await import('fs')
+    const content = readFileSync(path, 'utf8')
+    expect(content).toContain('BEGIN:VCARD')
+    expect(content).toContain('FN:Alex Nguyen')
+    expect(content).toContain('ORG:Luxe Furnishings')
+    expect(content).toContain('TEL;TYPE=CELL:5551239876')
+    expect(content).toContain('EMAIL:alex@luxe.com')
+    expect(content).toContain('END:VCARD')
+  })
+})
