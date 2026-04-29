@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const STORAGE_KEY = "furniture_crm_v1";
 
@@ -55,6 +55,10 @@ export default function App() {
   const [filter, setFilter] = useState("all");
   const [showMyInfo, setShowMyInfo] = useState(false);
   const [toast, setToast] = useState(null);
+  const [lookupQuery, setLookupQuery] = useState("");
+  const [lookupAnswer, setLookupAnswer] = useState(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const lookupInputRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -121,6 +125,27 @@ export default function App() {
     setForm({ name: c.name, phone: c.phone, interest: c.interest, notes: c.notes, followUpDays: days });
     setEditId(c.id);
     setView("add");
+  }
+
+  async function runLookup(q) {
+    const query = (q || lookupQuery).trim();
+    if (!query) return;
+    setLookupLoading(true);
+    setLookupAnswer(null);
+    try {
+      const res = await fetch("/api/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Lookup failed");
+      setLookupAnswer(data.answer);
+    } catch (err) {
+      setLookupAnswer(`Error: ${err.message}`);
+    } finally {
+      setLookupLoading(false);
+    }
   }
 
   function exportData() {
@@ -456,6 +481,70 @@ export default function App() {
         </div>
       )}
 
+      {/* Lookup */}
+      {view === "lookup" && (
+        <div style={{ padding: 20 }}>
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#d4a853", marginBottom: 6 }}>Furniture Lookup</div>
+          <div style={{ fontSize: 13, color: "#5a5a7a", marginBottom: 20 }}>Ask anything about furniture — specs, styles, materials, care tips.</div>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <input
+              ref={lookupInputRef}
+              value={lookupQuery}
+              onChange={e => setLookupQuery(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && runLookup()}
+              placeholder="e.g. What's eight-way hand-tied?"
+              style={{ flex: 1, background: "#1a1a2e", border: "1px solid #2a2a3a", borderRadius: 10, padding: "12px 14px", color: "#f0ede8", fontSize: 14 }}
+            />
+            <button
+              onClick={() => runLookup()}
+              disabled={lookupLoading || !lookupQuery.trim()}
+              style={{ background: lookupLoading || !lookupQuery.trim() ? "#2a2a3a" : "#d4a853", color: lookupLoading || !lookupQuery.trim() ? "#5a5a7a" : "#0f0f13", border: "none", borderRadius: 10, padding: "0 18px", fontSize: 20, fontWeight: 700, cursor: lookupLoading || !lookupQuery.trim() ? "not-allowed" : "pointer" }}>
+              {lookupLoading ? "…" : "→"}
+            </button>
+          </div>
+
+          {/* Quick prompts */}
+          {!lookupAnswer && !lookupLoading && (
+            <div>
+              <div style={{ fontSize: 11, color: "#5a5a7a", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Try asking</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {[
+                  "What's the difference between memory foam and hybrid?",
+                  "How to clean microfiber sofa?",
+                  "What size rug for a 12x14 living room?",
+                  "Solid wood vs engineered wood pros and cons",
+                  "What's a good sofa frame to look for?",
+                ].map(q => (
+                  <button key={q} onClick={() => { setLookupQuery(q); runLookup(q); }}
+                    style={{ background: "#1a1a2e", border: "1px solid #2a2a3a", borderRadius: 20, padding: "6px 12px", color: "#a0a0c0", fontSize: 12, cursor: "pointer", textAlign: "left" }}>
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {lookupLoading && (
+            <div style={{ textAlign: "center", color: "#5a5a7a", marginTop: 40 }}>
+              <div style={{ fontSize: 30, marginBottom: 8 }}>✨</div>
+              <div style={{ fontSize: 14 }}>Looking that up…</div>
+            </div>
+          )}
+
+          {lookupAnswer && (
+            <div style={{ background: "#1a1a2e", border: "1px solid #2a2a3a", borderRadius: 14, padding: "16px 18px", marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: "#5a5a7a", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Answer</div>
+              <div style={{ fontSize: 14, color: "#d0ccc5", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{lookupAnswer}</div>
+              <button onClick={() => { setLookupAnswer(null); setLookupQuery(""); lookupInputRef.current?.focus(); }}
+                style={{ marginTop: 14, background: "none", border: "1px solid #2a2a3a", borderRadius: 8, padding: "7px 16px", color: "#7a7a9a", fontSize: 12, cursor: "pointer" }}>
+                Ask another
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Bottom Nav */}
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: "#1a1a2e", borderTop: "1px solid #2a2a3a", display: "flex", padding: "10px 20px 16px" }}>
         <button onClick={() => setView("dashboard")} style={{ flex: 1, background: "none", border: "none", color: view === "dashboard" ? "#d4a853" : "#5a5a7a", fontSize: 12, fontWeight: 500, padding: "6px 0" }}>
@@ -469,6 +558,10 @@ export default function App() {
         <button onClick={() => setFilter("overdue")} style={{ flex: 1, background: "none", border: "none", color: overdue > 0 ? "#e74c3c" : "#5a5a7a", fontSize: 12, fontWeight: 500, padding: "6px 0" }}>
           <div style={{ fontSize: 22 }}>🔔</div>
           {overdue > 0 ? `${overdue} Overdue` : "Follow-ups"}
+        </button>
+        <button onClick={() => setView("lookup")} style={{ flex: 1, background: "none", border: "none", color: view === "lookup" ? "#d4a853" : "#5a5a7a", fontSize: 12, fontWeight: 500, padding: "6px 0" }}>
+          <div style={{ fontSize: 22 }}>🔍</div>
+          Lookup
         </button>
       </div>
     </div>
