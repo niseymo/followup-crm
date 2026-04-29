@@ -39,3 +39,7 @@ public/      PWA manifest, service worker, icons
 - No analytics, no telemetry, no third-party services
 
 Full ground rules in [`.github/copilot-instructions.md`](./.github/copilot-instructions.md).
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for release history.
