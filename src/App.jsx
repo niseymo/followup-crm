@@ -83,7 +83,8 @@ const defaultMyInfo = { name: "", title: "Sales Associate", store: "", phone: ""
 export default function App() {
   const [view, setView] = useState("dashboard");
   const [contacts, setContacts] = useState([]);
-  const [myInfo, setMyInfo] = useState(defaultMyInfo);
+  const [profiles, setProfiles] = useState([{ id: "default", ...defaultMyInfo }]);
+  const [activeProfileId, setActiveProfileId] = useState("default");
   const [msgTemplate, setMsgTemplate] = useState(DEFAULT_TEMPLATE);
   const [themeMode, setThemeMode] = useState("auto");
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
@@ -107,11 +108,42 @@ export default function App() {
     : themeMode;
   const th = THEMES[effectiveTheme];
 
+  const myInfo = profiles.find(p => p.id === activeProfileId) || profiles[0] || defaultMyInfo;
+
+  function updateActiveProfile(updater) {
+    setProfiles(ps => ps.map(p =>
+      p.id === activeProfileId
+        ? { ...p, ...(typeof updater === "function" ? updater(p) : updater) }
+        : p
+    ));
+  }
+
+  function addProfile() {
+    const id = `profile-${Date.now()}`;
+    setProfiles(ps => [...ps, { id, ...defaultMyInfo }]);
+    setActiveProfileId(id);
+  }
+
+  function deleteProfile(id) {
+    setProfiles(ps => {
+      const next = ps.filter(p => p.id !== id);
+      return next.length ? next : [{ id: "default", ...defaultMyInfo }];
+    });
+    if (activeProfileId === id) setActiveProfileId(profiles.find(p => p.id !== id)?.id || "default");
+  }
+
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
       if (saved.contacts) setContacts(saved.contacts);
-      if (saved.myInfo) setMyInfo(saved.myInfo);
+      if (saved.profiles) {
+        setProfiles(saved.profiles);
+        if (saved.activeProfileId) setActiveProfileId(saved.activeProfileId);
+      } else if (saved.myInfo) {
+        // Migrate old single-myInfo schema to profiles
+        setProfiles([{ id: "default", ...defaultMyInfo, ...saved.myInfo }]);
+        setActiveProfileId("default");
+      }
       if (saved.msgTemplate) setMsgTemplate(saved.msgTemplate);
       if (saved.themeMode) setThemeMode(saved.themeMode);
       setCategories(saved.categories || DEFAULT_CATEGORIES);
@@ -127,9 +159,9 @@ export default function App() {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, contacts, myInfo, msgTemplate, themeMode, categories }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, contacts, profiles, activeProfileId, msgTemplate, themeMode, categories }));
     } catch {}
-  }, [contacts, myInfo, msgTemplate, themeMode, categories]);
+  }, [contacts, profiles, activeProfileId, msgTemplate, themeMode, categories]);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -262,7 +294,13 @@ export default function App() {
         const parsed = JSON.parse(ev.target.result);
         if (!parsed.contacts) return showToast("Invalid backup file", "error");
         setContacts(parsed.contacts);
-        if (parsed.myInfo) setMyInfo(parsed.myInfo);
+        if (parsed.profiles) {
+          setProfiles(parsed.profiles);
+          if (parsed.activeProfileId) setActiveProfileId(parsed.activeProfileId);
+        } else if (parsed.myInfo) {
+          setProfiles([{ id: "default", ...defaultMyInfo, ...parsed.myInfo }]);
+          setActiveProfileId("default");
+        }
         if (parsed.msgTemplate) setMsgTemplate(parsed.msgTemplate);
         showToast(`Restored ${parsed.contacts.length} contacts ✓`);
       } catch {
@@ -426,12 +464,42 @@ export default function App() {
           <div style={{ background: th.surface, width: "100%", maxWidth: 480, margin: "0 auto", borderRadius: "20px 20px 0 0", padding: 24, maxHeight: "92vh", overflowY: "auto" }}>
             <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: "#d4a853", marginBottom: 16 }}>Settings</div>
 
+            {/* Profiles */}
+            <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Profiles</div>
+            {profiles.map(p => (
+              <div key={p.id} data-testid={`profile-row-${p.id}`} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, background: p.id === activeProfileId ? "#d4a85322" : th.btnAltBg, border: `1px solid ${p.id === activeProfileId ? "#d4a853" : th.border}`, borderRadius: 10, padding: "10px 12px" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: p.id === activeProfileId ? 600 : 400, color: th.text }}>{p.name || "(no name)"}</div>
+                  {p.store && <div style={{ fontSize: 11, color: th.textMuted }}>{p.store}</div>}
+                </div>
+                {p.id !== activeProfileId && (
+                  <button data-testid={`switch-profile-${p.id}`} onClick={() => setActiveProfileId(p.id)}
+                    style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontWeight: 600 }}>
+                    Switch
+                  </button>
+                )}
+                {p.id === activeProfileId && (
+                  <div style={{ fontSize: 11, color: "#d4a853", fontWeight: 600 }}>Active</div>
+                )}
+                {profiles.length > 1 && (
+                  <button data-testid={`delete-profile-${p.id}`} onClick={() => deleteProfile(p.id)}
+                    style={{ background: "#2a1a1a", color: "#e74c3c", border: "1px solid #3a2a2a", borderRadius: 6, padding: "5px 8px", fontSize: 11 }}>
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+            <button data-testid="add-profile-btn" onClick={addProfile}
+              style={{ width: "100%", background: th.btnAltBg, color: th.textMuted, border: `1px dashed ${th.border}`, borderRadius: 10, padding: "10px", fontSize: 13, marginBottom: 16 }}>
+              + Add another profile
+            </button>
+
             {/* My Info */}
-            <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>My Info</div>
+            <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>My Info — {myInfo.name || "Active Profile"}</div>
             {[["name","Your Name"],["title","Title"],["store","Store Name"],["phone","Your Phone"],["email","Your Email (optional)"]].map(([k, label]) => (
               <div key={k} style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 11, color: th.textDim, marginBottom: 4 }}>{label}</div>
-                <input data-testid={`myinfo-${k}`} value={myInfo[k]} onChange={e => setMyInfo(mi => ({ ...mi, [k]: e.target.value }))} style={{ width: "100%", background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 8, padding: "10px 12px", color: th.text, fontSize: 15 }} />
+                <input data-testid={`myinfo-${k}`} value={myInfo[k] || ""} onChange={e => updateActiveProfile(mi => ({ ...mi, [k]: e.target.value }))} style={{ width: "100%", background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 8, padding: "10px 12px", color: th.text, fontSize: 15 }} />
               </div>
             ))}
 

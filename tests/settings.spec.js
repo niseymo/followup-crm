@@ -125,6 +125,58 @@ test.describe('Settings Modal', () => {
   })
 })
 
+// ─── Multi-profile ──────────────────────────────────────────────────────────
+
+test.describe('Multi-profile myInfo', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await clearStorage(page)
+  })
+
+  test('can add a second profile and switch to it', async ({ page }) => {
+    await page.getByTestId('settings-btn').tap()
+    await page.getByTestId('add-profile-btn').tap()
+    await page.getByTestId('myinfo-name').fill('Second User')
+    await page.getByTestId('myinfo-store').fill('Second Store')
+    await page.getByRole('button', { name: 'Done' }).tap()
+    // Second profile is active — header should show new name
+    await expect(page.getByText(/Second User/)).toBeVisible()
+  })
+
+  test('switching profiles changes the active profile in header', async ({ page }) => {
+    await seedMyInfo(page, { name: 'Profile One', store: 'Store One' })
+    await page.getByTestId('settings-btn').tap()
+    await page.getByTestId('add-profile-btn').tap()
+    await page.getByTestId('myinfo-name').fill('Profile Two')
+    await page.getByRole('button', { name: 'Done' }).tap()
+    await expect(page.getByText(/Profile Two/)).toBeVisible()
+
+    // Switch back to first profile
+    await page.getByTestId('settings-btn').tap()
+    // The first profile row should have a Switch button (not active)
+    const firstProfileRows = page.locator('[data-testid^="switch-profile-"]')
+    await firstProfileRows.first().tap()
+    await page.getByRole('button', { name: 'Done' }).tap()
+    await expect(page.getByText(/Profile One/)).toBeVisible()
+  })
+
+  test('profile CRUD persists across reload', async ({ page }) => {
+    await page.getByTestId('settings-btn').tap()
+    await page.getByTestId('add-profile-btn').tap()
+    await page.getByTestId('myinfo-name').fill('Reload Test')
+    await page.getByRole('button', { name: 'Done' }).tap()
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText(/Reload Test/)).toBeVisible()
+  })
+
+  test('delete profile button is absent when only one profile exists', async ({ page }) => {
+    await page.getByTestId('settings-btn').tap()
+    // Only one profile → no delete button
+    await expect(page.locator('[data-testid^="delete-profile-"]')).not.toBeVisible()
+  })
+})
+
 // ─── Interest categories ────────────────────────────────────────────────────
 
 test.describe('Interest categories', () => {
