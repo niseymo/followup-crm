@@ -124,3 +124,63 @@ test.describe('Settings Modal', () => {
     await expect(page.getByText('Restored Customer')).toBeVisible()
   })
 })
+
+// ─── Backup reminder banner ──────────────────────────────────────────────────
+
+test.describe('Backup reminder banner', () => {
+  test('shows banner when no export has ever been done', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => {
+      localStorage.clear()
+      localStorage.setItem('furniture_crm_v1', JSON.stringify({ contacts: [], myInfo: {}, msgTemplate: '' }))
+    })
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByTestId('backup-banner')).toBeVisible()
+  })
+
+  test('does not show banner when export is recent (within 7 days)', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => {
+      localStorage.clear()
+      localStorage.setItem('furniture_crm_v1', JSON.stringify({
+        contacts: [], myInfo: {}, msgTemplate: '',
+        lastExportedAt: new Date().toISOString(),
+      }))
+    })
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByTestId('backup-banner')).not.toBeVisible()
+  })
+
+  test('dismiss button hides banner for 24h', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => {
+      localStorage.clear()
+      localStorage.setItem('furniture_crm_v1', JSON.stringify({ contacts: [], myInfo: {}, msgTemplate: '' }))
+    })
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByTestId('backup-banner')).toBeVisible()
+
+    await page.getByTestId('backup-banner-dismiss').tap()
+    await expect(page.getByTestId('backup-banner')).not.toBeVisible()
+
+    // Reload should still suppress banner (dismiss is in effect)
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByTestId('backup-banner')).not.toBeVisible()
+  })
+
+  test('Backup now button opens settings modal', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => {
+      localStorage.clear()
+      localStorage.setItem('furniture_crm_v1', JSON.stringify({ contacts: [], myInfo: {}, msgTemplate: '' }))
+    })
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('backup-banner-now').tap()
+    await expect(page.getByText('Settings')).toBeVisible()
+  })
+})

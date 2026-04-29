@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
 const STORAGE_KEY = "furniture_crm_v1";
+const DISMISS_KEY = "followup_backup_dismissed_until";
 
 const FURNITURE_INTERESTS = [
   "Sofa / Sectional", "Bedroom Set", "Dining Table", "Home Office",
@@ -59,6 +60,7 @@ export default function App() {
   const [lookupAnswer, setLookupAnswer] = useState(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const lookupInputRef = useRef(null);
+  const [showBackupBanner, setShowBackupBanner] = useState(false);
 
   useEffect(() => {
     try {
@@ -66,11 +68,20 @@ export default function App() {
       if (saved.contacts) setContacts(saved.contacts);
       if (saved.myInfo) setMyInfo(saved.myInfo);
       if (saved.msgTemplate) setMsgTemplate(saved.msgTemplate);
+
+      const dismissedUntil = localStorage.getItem(DISMISS_KEY);
+      const now = Date.now();
+      if (dismissedUntil && now < Number(dismissedUntil)) return;
+      const lastExport = saved.lastExportedAt ? new Date(saved.lastExportedAt).getTime() : 0;
+      if (now - lastExport > 7 * 24 * 60 * 60 * 1000) setShowBackupBanner(true);
     } catch {}
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ contacts, myInfo, msgTemplate }));
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, contacts, myInfo, msgTemplate }));
+    } catch {}
   }, [contacts, myInfo, msgTemplate]);
 
   function showToast(msg, type = "success") {
@@ -149,15 +160,26 @@ export default function App() {
   }
 
   function exportData() {
-    const data = JSON.stringify({ contacts, myInfo, msgTemplate, exportedAt: new Date().toISOString() }, null, 2);
+    const now = new Date().toISOString();
+    const data = JSON.stringify({ contacts, myInfo, msgTemplate, exportedAt: now }, null, 2);
     const blob = new Blob([data], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `followup-backup-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `followup-backup-${now.split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, lastExportedAt: now }));
+    } catch {}
+    setShowBackupBanner(false);
     showToast("Backup downloaded ✓");
+  }
+
+  function dismissBackupBanner() {
+    localStorage.setItem(DISMISS_KEY, String(Date.now() + 24 * 60 * 60 * 1000));
+    setShowBackupBanner(false);
   }
 
   function importData(e) {
@@ -236,6 +258,23 @@ export default function App() {
       {toast && (
         <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#c0392b" : "#1e7e5a", color: "#fff", padding: "10px 20px", borderRadius: 10, zIndex: 999, fontSize: 14, fontWeight: 500, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }}>
           {toast.msg}
+        </div>
+      )}
+
+      {/* Backup reminder banner */}
+      {showBackupBanner && (
+        <div data-testid="backup-banner" style={{ background: "#3a2e00", borderBottom: "1px solid #7a6000", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, fontSize: 13, color: "#f0c040", lineHeight: 1.4 }}>
+            ⚠️ Back up your data — it's been over 7 days since your last export.
+          </div>
+          <button data-testid="backup-banner-now" onClick={() => { setShowMyInfo(true); setShowBackupBanner(false); }}
+            style={{ background: "#f0c040", color: "#1a1200", border: "none", borderRadius: 6, padding: "6px 10px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+            Backup now
+          </button>
+          <button data-testid="backup-banner-dismiss" onClick={dismissBackupBanner}
+            style={{ background: "none", border: "none", color: "#7a6000", fontSize: 18, lineHeight: 1, padding: "0 4px" }}>
+            ×
+          </button>
         </div>
       )}
 
