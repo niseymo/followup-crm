@@ -434,14 +434,14 @@ export default function App() {
           {[["name","Customer Name *","text"],["phone","Phone Number *","tel"]].map(([k, label, type]) => (
             <div key={k} style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, color: "#7a7a9a", marginBottom: 5, textTransform: "uppercase", letterSpacing: 1 }}>{label}</div>
-              <input type={type} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
+              <input data-testid={`input-${k}`} type={type} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
                 style={{ width: "100%", background: "#1a1a2e", border: "1px solid #2a2a3a", borderRadius: 10, padding: "12px 14px", color: "#f0ede8", fontSize: 15 }} />
             </div>
           ))}
 
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 11, color: "#7a7a9a", marginBottom: 5, textTransform: "uppercase", letterSpacing: 1 }}>Interested In</div>
-            <select value={form.interest} onChange={e => setForm(f => ({ ...f, interest: e.target.value }))}
+            <select data-testid="select-interest" value={form.interest} onChange={e => setForm(f => ({ ...f, interest: e.target.value }))}
               style={{ width: "100%", background: "#1a1a2e", border: "1px solid #2a2a3a", borderRadius: 10, padding: "12px 14px", color: form.interest ? "#f0ede8" : "#5a5a7a", fontSize: 15 }}>
               <option value="">Select category...</option>
               {FURNITURE_INTERESTS.map(i => <option key={i} value={i}>{i}</option>)}
@@ -450,7 +450,7 @@ export default function App() {
 
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 11, color: "#7a7a9a", marginBottom: 5, textTransform: "uppercase", letterSpacing: 1 }}>Notes</div>
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
+            <textarea data-testid="textarea-notes" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
               placeholder="Budget, style preference, timeline..."
               style={{ width: "100%", background: "#1a1a2e", border: "1px solid #2a2a3a", borderRadius: 10, padding: "12px 14px", color: "#f0ede8", fontSize: 14, resize: "none" }} />
           </div>

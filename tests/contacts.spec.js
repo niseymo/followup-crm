@@ -22,39 +22,27 @@ test.describe('Contact Management', () => {
     await page.getByRole('button', { name: '+' }).tap()
     await expect(page.getByText('New Customer')).toBeVisible()
 
-    await page.getByPlaceholder('').first().fill('Maria Gonzalez')
-    // Phone field
-    const inputs = page.locator('input')
-    await inputs.nth(1).fill('5551112222')
-
-    // Select interest
-    await page.locator('select').selectOption('Sofa / Sectional')
-
-    // Notes
-    await page.locator('textarea').fill('Budget around $2k, wants grey fabric')
-
-    // Follow-up: 3 days
+    await page.getByTestId('input-name').fill('Maria Gonzalez')
+    await page.getByTestId('input-phone').fill('5551112222')
+    await page.getByTestId('select-interest').selectOption('Sofa / Sectional')
+    await page.getByTestId('textarea-notes').fill('Budget around $2k, wants grey fabric')
     await page.getByRole('button', { name: '3 Days' }).tap()
-
     await page.getByRole('button', { name: 'Add Customer' }).tap()
 
-    // Should be back on dashboard with the contact visible
     await expect(page.getByText('Maria Gonzalez')).toBeVisible()
     await expect(page.getByText('Sofa / Sectional')).toBeVisible()
   })
 
   test('shows validation error when name is missing', async ({ page }) => {
     await page.getByRole('button', { name: '+' }).tap()
-    const inputs = page.locator('input')
-    await inputs.nth(1).fill('5551112222')
+    await page.getByTestId('input-phone').fill('5551112222')
     await page.getByRole('button', { name: 'Add Customer' }).tap()
     await expect(page.getByText('Name and phone required')).toBeVisible()
   })
 
   test('shows validation error when phone is missing', async ({ page }) => {
     await page.getByRole('button', { name: '+' }).tap()
-    const inputs = page.locator('input')
-    await inputs.nth(0).fill('Test Person')
+    await page.getByTestId('input-name').fill('Test Person')
     await page.getByRole('button', { name: 'Add Customer' }).tap()
     await expect(page.getByText('Name and phone required')).toBeVisible()
   })
@@ -68,9 +56,8 @@ test.describe('Contact Management', () => {
     await page.getByRole('button', { name: 'Edit' }).first().tap()
     await expect(page.getByText('Edit Contact')).toBeVisible()
 
-    const nameInput = page.locator('input').first()
-    await nameInput.clear()
-    await nameInput.fill('Edited Name')
+    await page.getByTestId('input-name').clear()
+    await page.getByTestId('input-name').fill('Edited Name')
     await page.getByRole('button', { name: 'Save Changes' }).tap()
 
     await expect(page.getByText('Edited Name')).toBeVisible()
@@ -115,7 +102,6 @@ test.describe('Contact Management', () => {
 
   test('overdue counter updates correctly', async ({ page }) => {
     await seedContact(page, { name: 'Past Due', followUpDate: getPastDate(1) })
-    // The overdue stat chip should show 1
     const chip = page.locator('button').filter({ hasText: 'Overdue' })
     await expect(chip.locator('div').first()).toHaveText('1')
   })
@@ -125,7 +111,6 @@ test.describe('Contact Management', () => {
     const before = page.locator('button').filter({ hasText: 'Not Texted' })
     await expect(before.locator('div').first()).toHaveText('1')
 
-    // The Text Now link — we intercept it so the SMS app doesn't actually open
     await page.route('sms:**', route => route.abort())
     await page.locator('a').filter({ hasText: 'Text Now' }).first().tap()
 
