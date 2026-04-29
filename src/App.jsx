@@ -252,7 +252,7 @@ export default function App() {
             <button onClick={shareCard} style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 600 }}>
               Share Card
             </button>
-            <button onClick={() => setShowMyInfo(true)} style={{ background: "#2a2a3a", color: "#f0ede8", border: "none", borderRadius: 8, padding: "8px 10px", fontSize: 16 }}>
+            <button data-testid="settings-btn" onClick={() => setShowMyInfo(true)} style={{ background: "#2a2a3a", color: "#f0ede8", border: "none", borderRadius: 8, padding: "8px 10px", fontSize: 16 }}>
               ⚙️
             </button>
           </div>
@@ -283,7 +283,7 @@ export default function App() {
             {[["name","Your Name"],["title","Title"],["store","Store Name"],["phone","Your Phone"],["email","Your Email (optional)"]].map(([k, label]) => (
               <div key={k} style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 11, color: "#5a5a7a", marginBottom: 4 }}>{label}</div>
-                <input value={myInfo[k]} onChange={e => setMyInfo(mi => ({ ...mi, [k]: e.target.value }))} style={{ width: "100%", background: "#0f0f1a", border: "1px solid #2a2a3a", borderRadius: 8, padding: "10px 12px", color: "#f0ede8", fontSize: 15 }} />
+                <input data-testid={`myinfo-${k}`} value={myInfo[k]} onChange={e => setMyInfo(mi => ({ ...mi, [k]: e.target.value }))} style={{ width: "100%", background: "#0f0f1a", border: "1px solid #2a2a3a", borderRadius: 8, padding: "10px 12px", color: "#f0ede8", fontSize: 15 }} />
               </div>
             ))}
 
@@ -291,6 +291,7 @@ export default function App() {
             <div style={{ borderTop: "1px solid #2a2a3a", paddingTop: 16, marginTop: 8 }}>
               <div style={{ fontSize: 11, color: "#7a7a9a", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Text Message Template</div>
               <textarea
+                data-testid="template-textarea"
                 value={msgTemplate}
                 onChange={e => setMsgTemplate(e.target.value)}
                 rows={5}
