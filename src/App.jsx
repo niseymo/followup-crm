@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 const STORAGE_KEY = "furniture_crm_v1";
 const DISMISS_KEY = "followup_backup_dismissed_until";
 
-const FURNITURE_INTERESTS = [
+const DEFAULT_CATEGORIES = [
   "Sofa / Sectional", "Bedroom Set", "Dining Table", "Home Office",
   "Mattress", "Accent Chairs", "Storage / Shelving", "Outdoor",
   "Kids Furniture", "Just Browsing"
@@ -86,6 +86,8 @@ export default function App() {
   const [myInfo, setMyInfo] = useState(defaultMyInfo);
   const [msgTemplate, setMsgTemplate] = useState(DEFAULT_TEMPLATE);
   const [themeMode, setThemeMode] = useState("auto");
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  const [newCategory, setNewCategory] = useState("");
   const [form, setForm] = useState({ name: "", phone: "", interest: "", notes: "", followUpDays: 7 });
   const [editId, setEditId] = useState(null);
   const [search, setSearch] = useState("");
@@ -112,6 +114,7 @@ export default function App() {
       if (saved.myInfo) setMyInfo(saved.myInfo);
       if (saved.msgTemplate) setMsgTemplate(saved.msgTemplate);
       if (saved.themeMode) setThemeMode(saved.themeMode);
+      setCategories(saved.categories || DEFAULT_CATEGORIES);
 
       const dismissedUntil = localStorage.getItem(DISMISS_KEY);
       const now = Date.now();
@@ -124,9 +127,9 @@ export default function App() {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, contacts, myInfo, msgTemplate, themeMode }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, contacts, myInfo, msgTemplate, themeMode, categories }));
     } catch {}
-  }, [contacts, myInfo, msgTemplate, themeMode]);
+  }, [contacts, myInfo, msgTemplate, themeMode, categories]);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -432,6 +435,35 @@ export default function App() {
               </div>
             ))}
 
+            {/* Categories */}
+            <div style={{ borderTop: `1px solid ${th.border}`, paddingTop: 16, marginTop: 8, marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Interest Categories</div>
+              {categories.map(cat => (
+                <div key={cat} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <div style={{ flex: 1, fontSize: 14, color: th.text }}>{cat}</div>
+                  <button data-testid={`delete-category-${cat}`} onClick={() => setCategories(cs => cs.filter(c => c !== cat))}
+                    style={{ background: "#2a1a1a", color: "#e74c3c", border: "1px solid #3a2a2a", borderRadius: 6, padding: "4px 8px", fontSize: 11 }}>
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                <input
+                  data-testid="new-category-input"
+                  value={newCategory}
+                  onChange={e => setNewCategory(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && newCategory.trim()) { setCategories(cs => [...cs, newCategory.trim()]); setNewCategory(""); } }}
+                  placeholder="Add a category…"
+                  style={{ flex: 1, background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 8, padding: "8px 10px", color: th.text, fontSize: 14 }}
+                />
+                <button data-testid="add-category-btn"
+                  onClick={() => { if (newCategory.trim()) { setCategories(cs => [...cs, newCategory.trim()]); setNewCategory(""); } }}
+                  style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 600 }}>
+                  Add
+                </button>
+              </div>
+            </div>
+
             {/* Appearance */}
             <div style={{ borderTop: `1px solid ${th.border}`, paddingTop: 16, marginTop: 8, marginBottom: 16 }}>
               <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Appearance</div>
@@ -606,7 +638,7 @@ export default function App() {
             <select data-testid="select-interest" value={form.interest} onChange={e => setForm(f => ({ ...f, interest: e.target.value }))}
               style={{ width: "100%", background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, padding: "12px 14px", color: form.interest ? th.text : th.textDim, fontSize: 15 }}>
               <option value="">Select category...</option>
-              {FURNITURE_INTERESTS.map(i => <option key={i} value={i}>{i}</option>)}
+              {categories.map(i => <option key={i} value={i}>{i}</option>)}
             </select>
           </div>
 

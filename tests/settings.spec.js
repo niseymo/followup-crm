@@ -125,6 +125,47 @@ test.describe('Settings Modal', () => {
   })
 })
 
+// ─── Interest categories ────────────────────────────────────────────────────
+
+test.describe('Interest categories', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await clearStorage(page)
+  })
+
+  test('can add a new category and it appears in the contact form', async ({ page }) => {
+    await page.getByTestId('settings-btn').tap()
+    await page.getByTestId('new-category-input').fill('Custom Category')
+    await page.getByTestId('add-category-btn').tap()
+    await page.getByRole('button', { name: 'Done' }).tap()
+
+    await page.getByRole('button', { name: '+' }).tap()
+    await expect(page.getByTestId('select-interest')).toContainText('Custom Category')
+  })
+
+  test('can remove a category and it no longer appears in the contact form', async ({ page }) => {
+    await page.getByTestId('settings-btn').tap()
+    await page.getByTestId('delete-category-Mattress').tap()
+    await page.getByRole('button', { name: 'Done' }).tap()
+
+    await page.getByRole('button', { name: '+' }).tap()
+    await expect(page.getByTestId('select-interest')).not.toContainText('Mattress')
+  })
+
+  test('categories persist across reload', async ({ page }) => {
+    await page.getByTestId('settings-btn').tap()
+    await page.getByTestId('new-category-input').fill('Persisted Cat')
+    await page.getByTestId('add-category-btn').tap()
+    await page.getByRole('button', { name: 'Done' }).tap()
+
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    await page.getByRole('button', { name: '+' }).tap()
+    await expect(page.getByTestId('select-interest')).toContainText('Persisted Cat')
+  })
+})
+
 // ─── Backup reminder banner ──────────────────────────────────────────────────
 
 test.describe('Backup reminder banner', () => {
