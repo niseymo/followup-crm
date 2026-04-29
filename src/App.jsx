@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";
+import { Analytics } from "@vercel/analytics/react";
 
 const STORAGE_KEY = "furniture_crm_v1";
 const DISMISS_KEY = "followup_backup_dismissed_until";
@@ -865,6 +866,7 @@ export default function App() {
           Lookup
         </button>
       </div>
+      <Analytics />
     </div>
   );
 }
