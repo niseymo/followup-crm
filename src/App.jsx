@@ -184,6 +184,16 @@ export default function App() {
       console.error("Failed to load saved data:", err);
       showToast("Could not read saved data — storage may be corrupt", "error");
     }
+
+    // Warn if storage is getting full (>80% used).
+    if (navigator.storage?.estimate) {
+      navigator.storage.estimate().then(({ usage, quota }) => {
+        if (usage / quota > 0.8) {
+          const pct = Math.round((usage / quota) * 100);
+          showToast(`Storage ${pct}% full — export a backup soon`, "error");
+        }
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -249,6 +259,8 @@ export default function App() {
     } else {
       setContacts(cs => [record, ...cs]);
       showToast("Contact added");
+      // Request persistent storage on first save so the browser won't evict data.
+      navigator.storage?.persist?.();
     }
     setForm({ name: "", phone: "", interest: "", notes: "", followUpDays: 7 });
     setEditId(null);
