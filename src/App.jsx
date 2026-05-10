@@ -114,8 +114,12 @@ export default function App() {
   const [showBackupBanner, setShowBackupBanner] = useState(false);
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const waitingSWRef = useRef(null);
-  const [showQR,    setShowQR]    = useState(false);
-  const [qrDataUrl, setQrDataUrl] = useState(null);
+  const [showQR,         setShowQR]         = useState(false);
+  const [qrDataUrl,      setQrDataUrl]      = useState(null);
+  const [lastExportedAt, setLastExportedAt] = useState(null);
+  // Skip the first save-effect run — it fires with default state before the load effect's
+  // setState calls have been applied, which would overwrite saved data with empty defaults.
+  const saveSkipRef = useRef(true);
 
   const effectiveTheme = themeMode === "auto"
     ? (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark")
@@ -145,9 +149,20 @@ export default function App() {
   }
 
   useEffect(() => {
+    // Verify localStorage is available (disabled in some private/incognito modes).
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      if (saved.contacts) setContacts(saved.contacts);
+      localStorage.setItem("__ls_test__", "1");
+      localStorage.removeItem("__ls_test__");
+    } catch {
+      showToast("Storage unavailable — data will not be saved this session", "error");
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved.contacts)      setContacts(saved.contacts);
       if (saved.profiles) {
         setProfiles(saved.profiles);
         if (saved.activeProfileId) setActiveProfileId(saved.activeProfileId);
@@ -155,8 +170,9 @@ export default function App() {
         setProfiles([{ id: "default", ...defaultMyInfo, ...saved.myInfo }]);
         setActiveProfileId("default");
       }
-      if (saved.msgTemplate) setMsgTemplate(saved.msgTemplate);
-      if (saved.themeMode)   setThemeMode(saved.themeMode);
+      if (saved.msgTemplate)    setMsgTemplate(saved.msgTemplate);
+      if (saved.themeMode)      setThemeMode(saved.themeMode);
+      if (saved.lastExportedAt) setLastExportedAt(saved.lastExportedAt);
       setCategories(saved.categories || DEFAULT_CATEGORIES);
 
       const dismissedUntil = localStorage.getItem(DISMISS_KEY);
@@ -164,17 +180,26 @@ export default function App() {
       if (dismissedUntil && now < Number(dismissedUntil)) return;
       const lastExport = saved.lastExportedAt ? new Date(saved.lastExportedAt).getTime() : 0;
       if (now - lastExport > 7 * 24 * 60 * 60 * 1000) setShowBackupBanner(true);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load saved data:", err);
+      showToast("Could not read saved data — storage may be corrupt", "error");
+    }
   }, []);
 
   useEffect(() => {
+    if (saveSkipRef.current) { saveSkipRef.current = false; return; }
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        ...saved, contacts, profiles, activeProfileId, msgTemplate, themeMode, categories,
+        contacts, profiles, activeProfileId, msgTemplate, themeMode, categories, lastExportedAt,
       }));
-    } catch {}
-  }, [contacts, profiles, activeProfileId, msgTemplate, themeMode, categories]);
+    } catch (err) {
+      if (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED") {
+        showToast("Storage full — export a backup to free space", "error");
+      } else {
+        showToast("Could not save changes — check browser storage settings", "error");
+      }
+    }
+  }, [contacts, profiles, activeProfileId, msgTemplate, themeMode, categories, lastExportedAt]);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -205,18 +230,18 @@ export default function App() {
     if (!form.name.trim() || !form.phone.trim()) return showToast("Name and phone required", "error");
     const followUpDate = new Date();
     followUpDate.setDate(followUpDate.getDate() + Number(form.followUpDays));
+    const existing = editId ? contacts.find(c => c.id === editId) : null;
     const record = {
-      id: editId || Date.now().toString(),
+      id: existing?.id || crypto.randomUUID(),
       name: form.name.trim(),
       phone: form.phone.trim().replace(/\D/g, ""),
       interest: form.interest,
       notes: form.notes.trim(),
       followUpDate: followUpDate.toISOString().split("T")[0],
-      addedDate: editId
-        ? (contacts.find(c => c.id === editId)?.addedDate || new Date().toISOString().split("T")[0])
-        : new Date().toISOString().split("T")[0],
-      texted: editId ? (contacts.find(c => c.id === editId)?.texted || false) : false,
+      addedDate: existing?.addedDate || new Date().toISOString().split("T")[0],
+      texted: existing?.texted || false,
       done: false,
+      consentTimestamp: existing?.consentTimestamp || new Date().toISOString(),
     };
     if (editId) {
       setContacts(cs => cs.map(c => c.id === editId ? { ...c, ...record } : c));
@@ -258,7 +283,9 @@ export default function App() {
 
   function exportData() {
     const now  = new Date().toISOString();
-    const data = JSON.stringify({ contacts, myInfo, msgTemplate, exportedAt: now }, null, 2);
+    const data = JSON.stringify({
+      contacts, profiles, activeProfileId, msgTemplate, themeMode, categories, lastExportedAt: now,
+    }, null, 2);
     const blob = new Blob([data], { type: "application/json" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
@@ -266,10 +293,7 @@ export default function App() {
     a.download = `followup-backup-${now.split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, lastExportedAt: now }));
-    } catch {}
+    setLastExportedAt(now);
     setShowBackupBanner(false);
     showToast("Backup downloaded ✓");
   }
