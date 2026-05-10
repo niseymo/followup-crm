@@ -24,36 +24,48 @@ const DEFAULT_TEMPLATE = `Hi {name}! This is {myName} from {store}. Great meetin
 
 const THEMES = {
   dark: {
-    appBg:      "#0f0f13",
-    surface:    "#1a1a2e",
-    surfaceDeep:"#16213e",
-    inputBg:    "#0f0f1a",
-    statChipBg: "#1e1e2e",
-    border:     "#2a2a3a",
-    text:       "#f0ede8",
-    textMuted:  "#7a7a9a",
-    textDim:    "#5a5a7a",
-    textDimmer: "#4a4a6a",
-    btnAltBg:   "#252535",
-    btnAltText: "#a0a0c0",
-    scrollTrack:"#1a1a22",
-    scrollThumb:"#3a3a4a",
+    appBg:       "#000000",
+    surface:     "#1C1C1E",
+    surfaceDeep: "#2C2C2E",
+    inputBg:     "#1C1C1E",
+    statChipBg:  "#1C1C1E",
+    border:      "rgba(84,84,88,0.65)",
+    text:        "#FFFFFF",
+    textMuted:   "rgba(235,235,245,0.60)",
+    textDim:     "rgba(235,235,245,0.30)",
+    textDimmer:  "rgba(235,235,245,0.18)",
+    btnAltBg:    "#2C2C2E",
+    btnAltText:  "rgba(235,235,245,0.60)",
+    scrollTrack: "#1C1C1E",
+    scrollThumb: "#48484A",
+    navBg:       "rgba(28,28,30,0.92)",
+    tabBg:       "rgba(22,22,24,0.92)",
+    red:         "#FF453A",
+    orange:      "#FF9F0A",
+    green:       "#30D158",
+    blue:        "#0A84FF",
   },
   light: {
-    appBg:      "#f2f0eb",
-    surface:    "#ffffff",
-    surfaceDeep:"#f0eee8",
-    inputBg:    "#f8f7f3",
-    statChipBg: "#f0eeea",
-    border:     "#dddbd6",
-    text:       "#1a1a2e",
-    textMuted:  "#6a6a80",
-    textDim:    "#888890",
-    textDimmer: "#9a9aaa",
-    btnAltBg:   "#eeecea",
-    btnAltText: "#4a4a6a",
-    scrollTrack:"#e0ddd8",
-    scrollThumb:"#c0bdb8",
+    appBg:       "#F2F2F7",
+    surface:     "#FFFFFF",
+    surfaceDeep: "#F2F2F7",
+    inputBg:     "#FFFFFF",
+    statChipBg:  "#FFFFFF",
+    border:      "rgba(60,60,67,0.29)",
+    text:        "#000000",
+    textMuted:   "rgba(60,60,67,0.60)",
+    textDim:     "rgba(60,60,67,0.30)",
+    textDimmer:  "rgba(60,60,67,0.18)",
+    btnAltBg:    "#F2F2F7",
+    btnAltText:  "rgba(60,60,67,0.60)",
+    scrollTrack: "#E5E5EA",
+    scrollThumb: "#C7C7CC",
+    navBg:       "rgba(242,242,247,0.92)",
+    tabBg:       "rgba(249,249,249,0.92)",
+    red:         "#FF3B30",
+    orange:      "#FF9500",
+    green:       "#34C759",
+    blue:        "#007AFF",
   },
 };
 
@@ -76,10 +88,10 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 function urgencyColor(days) {
-  if (days < 0)  return "#e74c3c";
-  if (days === 0) return "#e67e22";
-  if (days <= 2)  return "#f39c12";
-  return "#27ae60";
+  if (days < 0)  return "#FF3B30";
+  if (days === 0) return "#FF9500";
+  if (days <= 2)  return "#FF9F0A";
+  return "#34C759";
 }
 function urgencyLabel(days) {
   if (days < 0)  return `${Math.abs(days)}d overdue`;
@@ -434,10 +446,10 @@ export default function App() {
   const msgPreview  = buildMessage(previewName);
 
   const stats = [
-    { label: "Total",      val: activeContacts.length, color: "#7a7aaa", f: "all"       },
-    { label: "Overdue",    val: overdue,               color: "#e74c3c", f: "overdue"   },
-    { label: "Today",      val: dueToday,              color: "#f39c12", f: "today"     },
-    { label: "Not Texted", val: notTexted,             color: "#3498db", f: "not_texted"},
+    { label: "Total",      val: activeContacts.length, color: th.textMuted, f: "all"       },
+    { label: "Overdue",    val: overdue,               color: th.red,        f: "overdue"   },
+    { label: "Today",      val: dueToday,              color: th.orange,     f: "today"     },
+    { label: "Not Texted", val: notTexted,             color: th.blue,       f: "not_texted"},
   ];
 
   function navTo(v) {
@@ -450,25 +462,25 @@ export default function App() {
   const Banners = (
     <>
       {showUpdateBanner && (
-        <div data-testid="update-banner" style={{ background: "#003a5a", borderBottom: "1px solid #006090", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ flex: 1, fontSize: 13, color: "#60c0f0" }}>🆕 New version available</div>
+        <div data-testid="update-banner" style={{ background: `${th.blue}18`, borderBottom: `0.5px solid ${th.border}`, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, fontSize: 14, color: th.blue, fontWeight: 500 }}>🆕 New version available</div>
           <button data-testid="update-banner-apply" onClick={applyUpdate}
-            style={{ background: "#60c0f0", color: "#001a2e", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
-            Tap to update
+            style={{ background: th.blue, color: "#ffffff", border: "none", borderRadius: 20, padding: "7px 14px", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
+            Update
           </button>
         </div>
       )}
       {showBackupBanner && (
-        <div data-testid="backup-banner" style={{ background: "#3a2e00", borderBottom: "1px solid #7a6000", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ flex: 1, fontSize: 13, color: "#f0c040", lineHeight: 1.4 }}>
-            ⚠️ Back up your data — it's been over 7 days since your last export.
+        <div data-testid="backup-banner" style={{ background: `${th.orange}14`, borderBottom: `0.5px solid ${th.border}`, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, fontSize: 14, color: th.orange, lineHeight: 1.4, fontWeight: 500 }}>
+            ⚠️ No backup in 7+ days
           </div>
           <button data-testid="backup-banner-now" onClick={() => { setShowMyInfo(true); setShowBackupBanner(false); }}
-            style={{ background: "#f0c040", color: "#1a1200", border: "none", borderRadius: 6, padding: "6px 10px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+            style={{ background: th.orange, color: "#ffffff", border: "none", borderRadius: 20, padding: "7px 14px", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
             Backup now
           </button>
           <button data-testid="backup-banner-dismiss" onClick={dismissBackupBanner}
-            style={{ background: "none", border: "none", color: "#7a6000", fontSize: 18, lineHeight: 1, padding: "0 4px" }}>
+            style={{ background: "none", border: "none", color: th.textDim, fontSize: 20, lineHeight: 1, padding: "0 4px" }}>
             ×
           </button>
         </div>
@@ -480,177 +492,184 @@ export default function App() {
     const days = daysUntil(c.followUpDate);
     const uc   = urgencyColor(days);
     return (
-      <div key={c.id} style={{ background: th.surface, border: `1px solid ${days < 0 ? "#e74c3c44" : th.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 10 }}>
+      <div key={c.id} style={{ background: th.surface, borderRadius: 16, padding: "14px 16px", marginBottom: 10, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: th.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
-            <div style={{ fontSize: 13, color: th.textMuted, marginTop: 2 }}>{c.interest || "No interest noted"}</div>
-            {c.notes && <div style={{ fontSize: 12, color: th.textDim, marginTop: 4, fontStyle: "italic" }}>"{c.notes}"</div>}
+            <div style={{ fontSize: 17, fontWeight: 600, color: th.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.2px" }}>{c.name}</div>
+            <div style={{ fontSize: 14, color: th.textMuted, marginTop: 2 }}>{c.interest || "No interest noted"}</div>
+            {c.notes && <div style={{ fontSize: 13, color: th.textDim, marginTop: 4, fontStyle: "italic" }}>"{c.notes}"</div>}
           </div>
-          <div style={{ textAlign: "right", minWidth: 70, marginLeft: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: uc, background: uc + "22", borderRadius: 6, padding: "3px 8px", display: "inline-block" }}>
+          <div style={{ textAlign: "right", minWidth: 76, marginLeft: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: uc, background: uc + "22", borderRadius: 20, padding: "4px 10px", display: "inline-block", letterSpacing: "-0.1px" }}>
               {urgencyLabel(days)}
             </div>
-            <div style={{ fontSize: 10, color: th.textDim, marginTop: 3 }}>{formatDate(c.followUpDate)}</div>
+            <div style={{ fontSize: 11, color: th.textDim, marginTop: 4 }}>{formatDate(c.followUpDate)}</div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
           <a href={smsLink(c.phone, c.name)} onClick={() => markTexted(c.id)}
-            style={{ flex: 1, minWidth: 80, background: c.texted ? "#1e3a2a" : "#1e4a3a", color: c.texted ? "#5a9a7a" : "#2ecc71", border: `1px solid ${c.texted ? "#2a5a3a" : "#2ecc71"}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, fontWeight: 600, textAlign: "center", textDecoration: "none" }}>
-            {c.texted ? "✓ Texted" : "📱 Text Now"}
+            style={{ flex: 2, background: c.texted ? `${th.green}18` : `${th.green}22`, color: c.texted ? th.textMuted : th.green, borderRadius: 12, padding: "10px 12px", fontSize: 14, fontWeight: 600, textAlign: "center", textDecoration: "none", letterSpacing: "-0.1px" }}>
+            {c.texted ? "✓ Texted" : "📱 Text"}
           </a>
           <a data-testid={`call-${c.id}`} href={`tel:${c.phone}`} title="Call"
-            style={{ background: "#1a2a3a", color: "#60a0e0", border: "1px solid #2a3a5a", borderRadius: 8, padding: "8px 10px", fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center" }}>
+            style={{ flex: 1, background: `${th.blue}18`, color: th.blue, borderRadius: 12, padding: "10px", fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
             📞
           </a>
           <button onClick={() => editContact(c)}
-            style={{ flex: 1, minWidth: 60, background: th.btnAltBg, color: th.btnAltText, border: `1px solid ${th.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, fontWeight: 600 }}>
+            style={{ flex: 1, background: th.btnAltBg, color: th.textMuted, border: "none", borderRadius: 12, padding: "10px", fontSize: 14, fontWeight: 500 }}>
             Edit
           </button>
           <button onClick={() => markDone(c.id)}
-            style={{ flex: 1, minWidth: 60, background: th.btnAltBg, color: th.textMuted, border: `1px solid ${th.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, fontWeight: 600 }}>
+            style={{ flex: 1, background: "rgba(212,168,83,0.14)", color: "#d4a853", border: "none", borderRadius: 12, padding: "10px", fontSize: 13, fontWeight: 600 }}>
             Done ✓
           </button>
           <button onClick={() => deleteContact(c.id)}
-            style={{ background: "#2a1a1a", color: "#e74c3c", border: "1px solid #3a2a2a", borderRadius: 8, padding: "8px 10px", fontSize: 12 }}>
+            style={{ background: `${th.red}18`, color: th.red, border: "none", borderRadius: 12, padding: "10px 12px", fontSize: 14 }}>
             🗑
           </button>
         </div>
-        <div style={{ fontSize: 10, color: th.textDimmer, marginTop: 8 }}>
-          Added {formatDate(c.addedDate)} · Consent: in-person {formatDate(c.addedDate)}
+        <div style={{ fontSize: 11, color: th.textDimmer, marginTop: 10, letterSpacing: "-0.1px" }}>
+          Added {formatDate(c.addedDate)} · Consent logged in-person
         </div>
       </div>
     );
   };
 
   const SettingsPanel = (
-    <div style={{ padding: isDesktop ? "0" : "0" }}>
-      <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: "#d4a853", marginBottom: 16 }}>Settings</div>
+    <div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: th.text, marginBottom: 24, letterSpacing: "-0.4px" }}>Settings</div>
 
       {/* Profiles */}
-      <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Profiles</div>
-      {profiles.map(p => (
-        <div key={p.id} data-testid={`profile-row-${p.id}`}
-          style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, background: p.id === activeProfileId ? "#d4a85322" : th.btnAltBg, border: `1px solid ${p.id === activeProfileId ? "#d4a853" : th.border}`, borderRadius: 10, padding: "10px 12px" }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: p.id === activeProfileId ? 600 : 400, color: th.text }}>{p.name || "(no name)"}</div>
-            {p.store && <div style={{ fontSize: 11, color: th.textMuted }}>{p.store}</div>}
+      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Profiles</div>
+      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 8, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+        {profiles.map((p, idx) => (
+          <div key={p.id} data-testid={`profile-row-${p.id}`}>
+            {idx > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: p.id === activeProfileId ? 600 : 400, color: th.text }}>{p.name || "(no name)"}</div>
+                {p.store && <div style={{ fontSize: 13, color: th.textMuted }}>{p.store}</div>}
+              </div>
+              {p.id !== activeProfileId && (
+                <button data-testid={`switch-profile-${p.id}`} onClick={() => setActiveProfileId(p.id)}
+                  style={{ background: "rgba(212,168,83,0.18)", color: "#d4a853", border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 14, fontWeight: 600 }}>
+                  Switch
+                </button>
+              )}
+              {p.id === activeProfileId && <div style={{ fontSize: 13, color: "#d4a853", fontWeight: 600 }}>Active</div>}
+              {profiles.length > 1 && (
+                <button data-testid={`delete-profile-${p.id}`} onClick={() => deleteProfile(p.id)}
+                  style={{ background: "none", color: th.red, border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 14 }}>
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
-          {p.id !== activeProfileId && (
-            <button data-testid={`switch-profile-${p.id}`} onClick={() => setActiveProfileId(p.id)}
-              style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontWeight: 600 }}>
-              Switch
-            </button>
-          )}
-          {p.id === activeProfileId && <div style={{ fontSize: 11, color: "#d4a853", fontWeight: 600 }}>Active</div>}
-          {profiles.length > 1 && (
-            <button data-testid={`delete-profile-${p.id}`} onClick={() => deleteProfile(p.id)}
-              style={{ background: "#2a1a1a", color: "#e74c3c", border: "1px solid #3a2a2a", borderRadius: 6, padding: "5px 8px", fontSize: 11 }}>
-              ✕
-            </button>
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
       <button data-testid="add-profile-btn" onClick={addProfile}
-        style={{ width: "100%", background: th.btnAltBg, color: th.textMuted, border: `1px dashed ${th.border}`, borderRadius: 10, padding: "10px", fontSize: 13, marginBottom: 16 }}>
-        + Add another profile
+        style={{ width: "100%", background: "none", color: "#d4a853", border: "none", borderRadius: 14, padding: "12px", fontSize: 16, fontWeight: 500, marginBottom: 24 }}>
+        + Add Profile
       </button>
 
       {/* My Info */}
-      <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>My Info — {myInfo.name || "Active Profile"}</div>
-      {[["name","Your Name"],["title","Title"],["store","Store Name"],["phone","Your Phone"],["email","Your Email (optional)"]].map(([k, label]) => (
-        <div key={k} style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: th.textDim, marginBottom: 4 }}>{label}</div>
-          <input data-testid={`myinfo-${k}`} value={myInfo[k] || ""}
-            onChange={e => updateActiveProfile(mi => ({ ...mi, [k]: e.target.value }))}
-            style={{ width: "100%", background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 8, padding: "10px 12px", color: th.text, fontSize: 15 }} />
-        </div>
-      ))}
-
-      {/* Categories */}
-      <div style={{ borderTop: `1px solid ${th.border}`, paddingTop: 16, marginTop: 8, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Interest Categories</div>
-        {categories.map(cat => (
-          <div key={cat} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <div style={{ flex: 1, fontSize: 14, color: th.text }}>{cat}</div>
-            <button data-testid={`delete-category-${cat}`} onClick={() => setCategories(cs => cs.filter(c => c !== cat))}
-              style={{ background: "#2a1a1a", color: "#e74c3c", border: "1px solid #3a2a2a", borderRadius: 6, padding: "4px 8px", fontSize: 11 }}>
-              Remove
-            </button>
+      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>My Info</div>
+      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 24, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+        {[["name","Name"],["title","Title"],["store","Store"],["phone","Phone"],["email","Email"]].map(([k, label], i) => (
+          <div key={k}>
+            {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
+            <div style={{ display: "flex", alignItems: "center", padding: "0 16px" }}>
+              <div style={{ fontSize: 16, color: th.text, width: 80, flexShrink: 0, paddingTop: 14, paddingBottom: 14 }}>{label}</div>
+              <input data-testid={`myinfo-${k}`} value={myInfo[k] || ""}
+                onChange={e => updateActiveProfile(mi => ({ ...mi, [k]: e.target.value }))}
+                style={{ flex: 1, background: "none", border: "none", padding: "14px 0", color: th.textMuted, fontSize: 16, textAlign: "right", outline: "none" }} />
+            </div>
           </div>
         ))}
-        <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-          <input data-testid="new-category-input" value={newCategory}
-            onChange={e => setNewCategory(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && newCategory.trim()) { setCategories(cs => [...cs, newCategory.trim()]); setNewCategory(""); } }}
-            placeholder="Add a category…"
-            style={{ flex: 1, background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 8, padding: "8px 10px", color: th.text, fontSize: 14 }} />
-          <button data-testid="add-category-btn"
-            onClick={() => { if (newCategory.trim()) { setCategories(cs => [...cs, newCategory.trim()]); setNewCategory(""); } }}
-            style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 600 }}>
-            Add
-          </button>
-        </div>
       </div>
 
       {/* Appearance */}
-      <div style={{ borderTop: `1px solid ${th.border}`, paddingTop: 16, marginTop: 8, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Appearance</div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {["auto","light","dark"].map(mode => (
-            <button key={mode} data-testid={`theme-${mode}`} onClick={() => setThemeMode(mode)}
-              style={{ flex: 1, background: themeMode === mode ? "#d4a853" : th.btnAltBg, color: themeMode === mode ? "#0f0f13" : th.text, border: `1px solid ${themeMode === mode ? "#d4a853" : th.border}`, borderRadius: 8, padding: "9px 4px", fontSize: 13, fontWeight: themeMode === mode ? 700 : 400, textTransform: "capitalize" }}>
-              {mode === "auto" ? "Auto" : mode === "light" ? "☀️ Light" : "🌙 Dark"}
-            </button>
-          ))}
-        </div>
+      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Appearance</div>
+      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 24, padding: "4px", display: "flex", gap: 4, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+        {["auto","light","dark"].map(mode => (
+          <button key={mode} data-testid={`theme-${mode}`} onClick={() => setThemeMode(mode)}
+            style={{ flex: 1, background: themeMode === mode ? "#d4a853" : "none", color: themeMode === mode ? "#000000" : th.textMuted, border: "none", borderRadius: 10, padding: "9px 4px", fontSize: 14, fontWeight: themeMode === mode ? 700 : 400, textTransform: "capitalize" }}>
+            {mode === "auto" ? "Auto" : mode === "light" ? "☀️ Light" : "🌙 Dark"}
+          </button>
+        ))}
       </div>
 
-      {/* Message Template */}
-      <div style={{ borderTop: `1px solid ${th.border}`, paddingTop: 16, marginTop: 8 }}>
-        <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Text Message Template</div>
-        <textarea data-testid="template-textarea" value={msgTemplate}
-          onChange={e => setMsgTemplate(e.target.value)} rows={5}
-          style={{ width: "100%", background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 8, padding: "10px 12px", color: th.text, fontSize: 14, resize: "vertical", lineHeight: 1.6 }} />
-        <div style={{ fontSize: 11, color: th.textDim, marginTop: 8, marginBottom: 6 }}>Tap to insert a variable:</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-          {[["{name}","customer name"],["{myName}","your name"],["{store}","store name"],["{phone}","your phone"],["{title}","your title"]].map(([v, hint]) => (
-            <button key={v} onClick={() => setMsgTemplate(prev => prev + v)} title={hint}
-              style={{ background: th.btnAltBg, color: th.btnAltText, border: `1px solid ${th.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 12, fontWeight: 500 }}>
-              {v}
-            </button>
-          ))}
-        </div>
-        <div style={{ background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}>
-          <div style={{ fontSize: 10, color: th.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Preview — sent to "{previewName}"</div>
-          <div style={{ fontSize: 13, color: th.textMuted, lineHeight: 1.6 }}>{msgPreview}</div>
-        </div>
-        <button onClick={() => { setMsgTemplate(DEFAULT_TEMPLATE); showToast("Template reset"); }}
-          style={{ background: "none", border: "none", color: th.textDim, fontSize: 12, padding: 0, textDecoration: "underline", cursor: "pointer" }}>
-          Reset to default
+      {/* Categories */}
+      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Interest Categories</div>
+      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 8, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+        {categories.map((cat, i) => (
+          <div key={cat}>
+            {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
+            <div style={{ display: "flex", alignItems: "center", padding: "12px 16px" }}>
+              <div style={{ flex: 1, fontSize: 16, color: th.text }}>{cat}</div>
+              <button data-testid={`delete-category-${cat}`} onClick={() => setCategories(cs => cs.filter(c => c !== cat))}
+                style={{ background: "none", color: th.red, border: "none", fontSize: 14, padding: "0 0 0 12px" }}>
+                Remove
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+        <input data-testid="new-category-input" value={newCategory}
+          onChange={e => setNewCategory(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter" && newCategory.trim()) { setCategories(cs => [...cs, newCategory.trim()]); setNewCategory(""); } }}
+          placeholder="Add a category…"
+          style={{ flex: 1, background: th.surface, border: `0.5px solid ${th.border}`, borderRadius: 12, padding: "12px 14px", color: th.text, fontSize: 16, outline: "none" }} />
+        <button data-testid="add-category-btn"
+          onClick={() => { if (newCategory.trim()) { setCategories(cs => [...cs, newCategory.trim()]); setNewCategory(""); } }}
+          style={{ background: "#d4a853", color: "#000000", border: "none", borderRadius: 12, padding: "12px 18px", fontSize: 16, fontWeight: 600 }}>
+          Add
         </button>
       </div>
 
-      {/* Backup */}
-      <div style={{ borderTop: `1px solid ${th.border}`, paddingTop: 16, marginTop: 16, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Backup & Restore</div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={exportData}
-            style={{ flex: 1, background: "#1e3a2a", color: "#2ecc71", border: "1px solid #2a5a3a", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600 }}>
-            ⬇️ Export Backup
+      {/* Message Template */}
+      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Text Message Template</div>
+      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 12, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+        <textarea data-testid="template-textarea" value={msgTemplate}
+          onChange={e => setMsgTemplate(e.target.value)} rows={4}
+          style={{ width: "100%", background: "none", border: "none", padding: "14px 16px", color: th.text, fontSize: 15, resize: "none", lineHeight: 1.6, outline: "none" }} />
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+        {[["{name}","customer name"],["{myName}","your name"],["{store}","store name"],["{phone}","your phone"],["{title}","your title"]].map(([v, hint]) => (
+          <button key={v} onClick={() => setMsgTemplate(prev => prev + v)} title={hint}
+            style={{ background: th.btnAltBg, color: "#d4a853", border: "none", borderRadius: 20, padding: "6px 12px", fontSize: 13, fontWeight: 500 }}>
+            {v}
           </button>
-          <label style={{ flex: 1, background: "#1a2a3a", color: "#3498db", border: "1px solid #2a3a5a", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer" }}>
-            ⬆️ Restore
-            <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
-          </label>
-        </div>
-        <div style={{ fontSize: 11, color: th.textDimmer, marginTop: 8, lineHeight: 1.5 }}>
-          📋 All data stored locally on your device only. Never shared externally.
-        </div>
+        ))}
+      </div>
+      <div style={{ background: th.surface, borderRadius: 14, padding: "14px 16px", marginBottom: 8, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+        <div style={{ fontSize: 11, color: th.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>Preview — sent to "{previewName}"</div>
+        <div style={{ fontSize: 14, color: th.textMuted, lineHeight: 1.6 }}>{msgPreview}</div>
+      </div>
+      <button onClick={() => { setMsgTemplate(DEFAULT_TEMPLATE); showToast("Template reset"); }}
+        style={{ background: "none", border: "none", color: th.textMuted, fontSize: 14, padding: "0 4px 24px", textDecoration: "underline" }}>
+        Reset to default
+      </button>
+
+      {/* Backup */}
+      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Backup & Restore</div>
+      <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+        <button onClick={exportData}
+          style={{ flex: 1, background: `${th.green}18`, color: th.green, border: "none", borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 600 }}>
+          ⬇️ Export Backup
+        </button>
+        <label style={{ flex: 1, background: `${th.blue}18`, color: th.blue, border: "none", borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 600, textAlign: "center", cursor: "pointer" }}>
+          ⬆️ Restore
+          <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
+        </label>
+      </div>
+      <div style={{ fontSize: 12, color: th.textDimmer, marginBottom: 28, lineHeight: 1.5, paddingLeft: 4 }}>
+        All data stored locally on your device only. Never shared.
       </div>
 
       <button onClick={() => setShowMyInfo(false)}
-        style={{ width: "100%", background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 600 }}>
+        style={{ width: "100%", background: "#d4a853", color: "#000000", border: "none", borderRadius: 14, padding: "16px", fontSize: 17, fontWeight: 600, letterSpacing: "-0.2px" }}>
         Done
       </button>
     </div>
@@ -661,7 +680,7 @@ export default function App() {
   return (
     <div data-testid="app-root" data-theme={effectiveTheme}
       style={{
-        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif",
         background: th.appBg,
         color: th.text,
         minHeight: "100dvh",
@@ -673,9 +692,10 @@ export default function App() {
       }}>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
         html, body {
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
           background: ${th.appBg};
           overscroll-behavior-y: contain;
           -webkit-tap-highlight-color: transparent;
@@ -686,9 +706,8 @@ export default function App() {
         a { font-family: inherit; touch-action: manipulation; }
         input, select, textarea, button { -webkit-appearance: none; appearance: none; }
         select { background-image: none; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: ${th.scrollTrack}; }
-        ::-webkit-scrollbar-thumb { background: ${th.scrollThumb}; border-radius: 2px; }
+        ::-webkit-scrollbar { display: none; }
+        * { scrollbar-width: none; -ms-overflow-style: none; }
         .contact-grid {
           display: grid;
           grid-template-columns: ${isWide ? "repeat(2, 1fr)" : "1fr"};
@@ -698,7 +717,7 @@ export default function App() {
 
       {/* ── Toast ─────────────────────────────────────────────────────────── */}
       {toast && (
-        <div style={{ position: "fixed", top: "max(calc(env(safe-area-inset-top) + 8px), 16px)", left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#c0392b" : "#1e7e5a", color: "#fff", padding: "10px 20px", borderRadius: 10, zIndex: 9999, fontSize: 14, fontWeight: 500, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap", maxWidth: "calc(100vw - 40px)", textAlign: "center" }}>
+        <div style={{ position: "fixed", top: "max(calc(env(safe-area-inset-top) + 12px), 20px)", left: "50%", transform: "translateX(-50%)", background: effectiveTheme === "dark" ? "rgba(44,44,46,0.96)" : "rgba(255,255,255,0.96)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", color: toast.type === "error" ? th.red : th.green, padding: "11px 20px", borderRadius: 14, zIndex: 9999, fontSize: 14, fontWeight: 600, boxShadow: "0 4px 24px rgba(0,0,0,0.30)", whiteSpace: "nowrap", maxWidth: "calc(100vw - 40px)", textAlign: "center", border: `0.5px solid ${th.border}` }}>
           {toast.msg}
         </div>
       )}
@@ -731,19 +750,28 @@ export default function App() {
 
       {/* ── Settings Modal ────────────────────────────────────────────────── */}
       {showMyInfo && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center" }}
+          onClick={() => setShowMyInfo(false)}>
           <div style={{
-            background: th.surface,
+            background: th.appBg,
             width: "100%",
             maxWidth: isDesktop ? 560 : 480,
-            borderRadius: isDesktop ? 16 : "20px 20px 0 0",
-            padding: 24,
-            paddingBottom: isDesktop ? 24 : "calc(env(safe-area-inset-bottom) + 24px)",
+            borderRadius: isDesktop ? 20 : "20px 20px 0 0",
+            padding: "0 20px 0",
+            paddingBottom: isDesktop ? 0 : "calc(env(safe-area-inset-bottom))",
             maxHeight: isDesktop ? "90dvh" : "92dvh",
             overflowY: "auto",
             margin: isDesktop ? "0 16px" : "0 auto",
-          }}>
-            {SettingsPanel}
+          }} onClick={e => e.stopPropagation()}>
+            {/* iOS sheet grabber handle */}
+            {!isDesktop && (
+              <div style={{ display: "flex", justifyContent: "center", paddingTop: 10, paddingBottom: 6 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: th.border }} />
+              </div>
+            )}
+            <div style={{ padding: isDesktop ? "24px 0" : "8px 0 24px" }}>
+              {SettingsPanel}
+            </div>
           </div>
         </div>
       )}
@@ -753,69 +781,71 @@ export default function App() {
       ══════════════════════════════════════════════════════════════════ */}
       {isDesktop && (
         <aside style={{
-          width: 240,
-          minWidth: 240,
+          width: 260,
+          minWidth: 260,
           height: "100vh",
           position: "sticky",
           top: 0,
           overflowY: "auto",
           background: th.surface,
-          borderRight: `1px solid ${th.border}`,
+          borderRight: `0.5px solid ${th.border}`,
           display: "flex",
           flexDirection: "column",
-          padding: "24px 16px 20px",
+          padding: "28px 16px 24px",
         }}>
-          {/* Logo */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 26, color: "#d4a853", lineHeight: 1 }}>Follow-Up</div>
-            <div style={{ fontSize: 12, color: th.textMuted, marginTop: 6 }}>
-              {myInfo.name && <span style={{ fontWeight: 600, color: th.text }}>{myInfo.name}<br/></span>}
-              {myInfo.store && <span>{myInfo.store}<br/></span>}
+          {/* Logo + profile */}
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, color: "#d4a853", lineHeight: 1, letterSpacing: "-0.5px" }}>Follow-Up</div>
+            <div style={{ fontSize: 13, color: th.textMuted, marginTop: 6, lineHeight: 1.5 }}>
+              {myInfo.name && <span style={{ fontWeight: 600, color: th.text }}>{myInfo.name} · </span>}
               {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
             </div>
           </div>
 
           {/* Nav */}
-          <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 20 }}>
+          <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 24 }}>
             {[
-              { icon: "📋", label: "Contacts",        active: view === "dashboard", action: () => navTo("dashboard") },
-              { icon: "➕", label: "Add Contact",      active: view === "add",       action: () => navTo("add") },
+              { icon: "👥", label: "Contacts",       active: view === "dashboard", action: () => navTo("dashboard") },
+              { icon: "＋", label: "Add Contact",     active: view === "add",       action: () => navTo("add") },
               { icon: "🔳", label: "Get Number (QR)", active: view === "qr",        action: () => navTo("qr") },
               { icon: "🔔", label: `Follow-ups${overdue > 0 ? ` (${overdue})` : ""}`, active: false, action: () => { setFilter("overdue"); setView("dashboard"); }, urgent: overdue > 0 },
-              { icon: "🔍", label: "Lookup",           active: view === "lookup",    action: () => navTo("lookup") },
+              { icon: "🔍", label: "Lookup",          active: view === "lookup",    action: () => navTo("lookup") },
             ].map(item => (
               <button key={item.label} onClick={item.action}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 10, border: "none", background: item.active ? "#d4a85322" : "none", color: item.active ? "#d4a853" : item.urgent ? "#e74c3c" : th.textMuted, fontSize: 14, fontWeight: item.active ? 600 : 400, textAlign: "left", width: "100%" }}>
-                <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{item.icon}</span>
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, border: "none", background: item.active ? "rgba(212,168,83,0.15)" : "none", color: item.active ? "#d4a853" : item.urgent ? th.red : th.textMuted, fontSize: 15, fontWeight: item.active ? 600 : 400, textAlign: "left", width: "100%", letterSpacing: "-0.1px" }}>
+                <span style={{ fontSize: 19, width: 26, textAlign: "center" }}>{item.icon}</span>
                 {item.label}
               </button>
             ))}
           </nav>
 
           {/* Stats */}
-          <div style={{ fontSize: 11, color: th.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Overview</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 20 }}>
-            {stats.map(s => (
-              <button key={s.f} onClick={() => { setFilter(filter === s.f ? "all" : s.f); setView("dashboard"); }}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 12px", borderRadius: 10, border: `1px solid ${filter === s.f ? s.color : "transparent"}`, background: filter === s.f ? s.color + "22" : th.btnAltBg, cursor: "pointer" }}>
-                <span style={{ fontSize: 13, color: th.textMuted }}>{s.label}</span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: s.color }}>{s.val}</span>
-              </button>
+          <div style={{ fontSize: 11, color: th.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 }}>Overview</div>
+          <div style={{ background: th.btnAltBg, borderRadius: 14, overflow: "hidden", marginBottom: 24 }}>
+            {stats.map((s, i) => (
+              <div key={s.f}>
+                {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 14 }} />}
+                <button onClick={() => { setFilter(filter === s.f ? "all" : s.f); setView("dashboard"); }}
+                  style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "none", background: filter === s.f ? s.color + "18" : "none" }}>
+                  <span style={{ fontSize: 14, color: filter === s.f ? s.color : th.textMuted }}>{s.label}</span>
+                  <span style={{ fontSize: 17, fontWeight: 700, color: s.color }}>{s.val}</span>
+                </button>
+              </div>
             ))}
           </div>
 
           {/* Actions */}
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
             <button data-testid="qr-btn" onClick={openQR}
-              style={{ background: th.btnAltBg, color: th.text, border: `1px solid ${th.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
-              <span>⬛</span> My QR Code
+              style={{ background: th.btnAltBg, color: th.textMuted, border: "none", borderRadius: 12, padding: "10px 14px", fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+              ⬛ vCard QR
             </button>
             <button onClick={shareCard}
-              style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontWeight: 600 }}>
+              style={{ background: "rgba(212,168,83,0.15)", color: "#d4a853", border: "none", borderRadius: 12, padding: "10px 14px", fontSize: 14, fontWeight: 600 }}>
               Share Card
             </button>
             <button data-testid="settings-btn" onClick={() => setShowMyInfo(true)}
-              style={{ background: th.btnAltBg, color: th.textMuted, border: `1px solid ${th.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+              style={{ background: th.btnAltBg, color: th.textMuted, border: "none", borderRadius: 12, padding: "10px 14px", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
               ⚙️ Settings
             </button>
           </div>
@@ -836,35 +866,28 @@ export default function App() {
 
         {/* ── Mobile-only header ─────────────────────────────────────────── */}
         {!isDesktop && (
-          <div style={{ background: `linear-gradient(135deg, ${th.surface} 0%, ${th.surfaceDeep} 100%)`, padding: "20px 20px 16px", borderBottom: `1px solid ${th.border}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#d4a853", letterSpacing: "-0.3px" }}>Follow-Up</div>
-                <div style={{ fontSize: 12, color: th.textMuted, marginTop: 2 }}>
-                  {myInfo.name ? `${myInfo.name} · ` : ""}{new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ background: th.navBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", borderBottom: `0.5px solid ${th.border}`, position: "sticky", top: 0, zIndex: 40 }}>
+            {/* Nav bar row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px 10px" }}>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, color: "#d4a853", letterSpacing: "-0.5px", lineHeight: 1 }}>Follow-Up</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <button data-testid="qr-btn" onClick={openQR}
-                  style={{ background: th.btnAltBg, color: th.text, border: `1px solid ${th.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 14 }} title="QR">
-                  ⬛
-                </button>
-                <button onClick={shareCard}
-                  style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 600 }}>
+                  style={{ background: "rgba(212,168,83,0.15)", color: "#d4a853", border: "none", borderRadius: 20, padding: "6px 12px", fontSize: 13, fontWeight: 600 }}>
                   Share Card
                 </button>
                 <button data-testid="settings-btn" onClick={() => setShowMyInfo(true)}
-                  style={{ background: th.btnAltBg, color: th.text, border: "none", borderRadius: 8, padding: "8px 10px", fontSize: 16 }}>
+                  style={{ background: th.btnAltBg, color: th.textMuted, border: "none", borderRadius: 20, width: 34, height: 34, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   ⚙️
                 </button>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+            {/* Stat filter chips */}
+            <div style={{ display: "flex", gap: 8, padding: "0 16px 12px", overflowX: "auto" }}>
               {stats.map(s => (
                 <button key={s.f} onClick={() => setFilter(filter === s.f ? "all" : s.f)}
-                  style={{ flex: 1, background: filter === s.f ? s.color + "33" : th.statChipBg, border: `1px solid ${filter === s.f ? s.color : th.border}`, borderRadius: 10, padding: "8px 4px", textAlign: "center" }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.val}</div>
-                  <div style={{ fontSize: 10, color: th.textMuted, marginTop: 1 }}>{s.label}</div>
+                  style={{ flex: "0 0 auto", background: filter === s.f ? s.color + "22" : th.btnAltBg, border: `1px solid ${filter === s.f ? s.color + "88" : th.border}`, borderRadius: 20, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: s.color }}>{s.val}</span>
+                  <span style={{ fontSize: 12, color: filter === s.f ? s.color : th.textMuted, fontWeight: filter === s.f ? 600 : 400 }}>{s.label}</span>
                 </button>
               ))}
             </div>
@@ -935,62 +958,69 @@ export default function App() {
 
         {/* ── Add / Edit view ────────────────────────────────────────────── */}
         {view === "add" && (
-          <div style={{ padding: isDesktop ? "24px 28px" : "20px", maxWidth: isDesktop ? 560 : "none" }}>
+          <div style={{ padding: isDesktop ? "24px 28px" : "16px 16px", maxWidth: isDesktop ? 560 : "none" }}>
             {!isDesktop && (
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#d4a853", marginBottom: 20 }}>
+              <div style={{ fontSize: 28, fontWeight: 700, color: th.text, marginBottom: 20, letterSpacing: "-0.5px" }}>
                 {editId ? "Edit Contact" : "New Customer"}
               </div>
             )}
 
-            {[["name","Customer Name *","text"],["phone","Phone Number *","tel"]].map(([k, label, type]) => (
-              <div key={k} style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: 1 }}>{label}</div>
-                <input data-testid={`input-${k}`} type={type} value={form[k]}
-                  onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
-                  style={{ width: "100%", background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, padding: "12px 14px", color: th.text, fontSize: 15 }} />
+            {/* Grouped input card */}
+            <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 16, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+              {[["name","Customer Name","text","Full name"],["phone","Phone Number","tel","Mobile number"]].map(([k, label, type, placeholder], i) => (
+                <div key={k}>
+                  {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
+                  <div style={{ display: "flex", alignItems: "center", padding: "0 16px" }}>
+                    <div style={{ fontSize: 16, color: th.textMuted, width: 110, flexShrink: 0, paddingTop: 14, paddingBottom: 14 }}>{label}</div>
+                    <input data-testid={`input-${k}`} type={type} value={form[k]} placeholder={placeholder}
+                      onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
+                      style={{ flex: 1, background: "none", border: "none", padding: "14px 0", color: th.text, fontSize: 16, textAlign: "right", outline: "none" }} />
+                  </div>
+                </div>
+              ))}
+              <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />
+              <div style={{ display: "flex", alignItems: "center", padding: "0 16px" }}>
+                <div style={{ fontSize: 16, color: th.textMuted, width: 110, flexShrink: 0, paddingTop: 14, paddingBottom: 14 }}>Interested In</div>
+                <select data-testid="select-interest" value={form.interest}
+                  onChange={e => setForm(f => ({ ...f, interest: e.target.value }))}
+                  style={{ flex: 1, background: "none", border: "none", padding: "14px 0", color: form.interest ? th.text : th.textMuted, fontSize: 16, textAlign: "right", outline: "none" }}>
+                  <option value="">Select…</option>
+                  {categories.map(i => <option key={i} value={i}>{i}</option>)}
+                </select>
               </div>
-            ))}
-
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: 1 }}>Interested In</div>
-              <select data-testid="select-interest" value={form.interest}
-                onChange={e => setForm(f => ({ ...f, interest: e.target.value }))}
-                style={{ width: "100%", background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, padding: "12px 14px", color: form.interest ? th.text : th.textDim, fontSize: 15 }}>
-                <option value="">Select category...</option>
-                {categories.map(i => <option key={i} value={i}>{i}</option>)}
-              </select>
             </div>
 
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: 1 }}>Notes</div>
+            {/* Notes */}
+            <div style={{ background: th.surface, borderRadius: 14, marginBottom: 16, overflow: "hidden", boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
               <textarea data-testid="textarea-notes" value={form.notes}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
-                placeholder="Budget, style preference, timeline..."
-                style={{ width: "100%", background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, padding: "12px 14px", color: th.text, fontSize: 14, resize: "none" }} />
+                placeholder="Budget, style preference, timeline…"
+                style={{ width: "100%", background: "none", border: "none", padding: "14px 16px", color: th.text, fontSize: 16, resize: "none", outline: "none", lineHeight: 1.5 }} />
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Follow Up In</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {/* Follow-up interval */}
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Follow Up In</div>
+              <div style={{ display: "flex", gap: 8 }}>
                 {FOLLOW_UP_INTERVALS.map(i => (
                   <button key={i.days} onClick={() => setForm(f => ({ ...f, followUpDays: i.days }))}
-                    style={{ flex: 1, minWidth: 60, background: form.followUpDays === i.days ? "#d4a853" : th.surface, color: form.followUpDays === i.days ? "#0f0f13" : th.textMuted, border: `1px solid ${form.followUpDays === i.days ? "#d4a853" : th.border}`, borderRadius: 8, padding: "9px 4px", fontSize: 12, fontWeight: form.followUpDays === i.days ? 700 : 400 }}>
+                    style={{ flex: 1, background: form.followUpDays === i.days ? "#d4a853" : th.surface, color: form.followUpDays === i.days ? "#000000" : th.textMuted, border: "none", borderRadius: 12, padding: "10px 4px", fontSize: 13, fontWeight: form.followUpDays === i.days ? 700 : 400, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
                     {i.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div style={{ background: "#1a2a1a", border: "1px solid #2a3a2a", borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#5a8a5a", lineHeight: 1.5 }}>
-              🔒 Consent logged as in-person verbal consent on {new Date().toLocaleDateString()}
+            <div style={{ background: `${th.green}14`, borderRadius: 12, padding: "10px 14px", marginBottom: 24, marginTop: 16, fontSize: 13, color: th.green, lineHeight: 1.5 }}>
+              🔒 In-person verbal consent logged · {new Date().toLocaleDateString()}
             </div>
 
             <button onClick={saveContact}
-              style={{ width: "100%", background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 12, padding: "15px", fontSize: 16, fontWeight: 700, marginBottom: 10 }}>
+              style={{ width: "100%", background: "#d4a853", color: "#000000", border: "none", borderRadius: 14, padding: "16px", fontSize: 17, fontWeight: 600, marginBottom: 12, letterSpacing: "-0.2px" }}>
               {editId ? "Save Changes" : "Add Customer"}
             </button>
             <button onClick={() => { setView("dashboard"); setEditId(null); setForm({ name: "", phone: "", interest: "", notes: "", followUpDays: 7 }); }}
-              style={{ width: "100%", background: "none", color: th.textMuted, border: `1px solid ${th.border}`, borderRadius: 12, padding: "13px", fontSize: 14 }}>
+              style={{ width: "100%", background: "none", color: th.textMuted, border: "none", borderRadius: 14, padding: "14px", fontSize: 17 }}>
               Cancel
             </button>
           </div>
@@ -1127,33 +1157,22 @@ export default function App() {
         )}
       </div>
 
-      {/* ── Mobile bottom nav (hidden on desktop) ─────────────────────────── */}
+      {/* ── Mobile bottom tab bar (iOS style) ───────────────────────────── */}
       {!isDesktop && (
-        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: th.surface, borderTop: `1px solid ${th.border}`, display: "flex", padding: "10px 8px 0", paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", zIndex: 50 }}>
-          <button onClick={() => setView("dashboard")}
-            style={{ flex: 1, background: "none", border: "none", color: view === "dashboard" ? "#d4a853" : th.textDim, fontSize: 11, fontWeight: 500, padding: "6px 0" }}>
-            <div style={{ fontSize: 20 }}>📋</div>
-            Contacts
-          </button>
-          <button onClick={() => setView("qr")}
-            style={{ flex: 1, background: "none", border: "none", color: view === "qr" ? "#d4a853" : th.textDim, fontSize: 11, fontWeight: 500, padding: "6px 0" }}>
-            <div style={{ fontSize: 20 }}>🔳</div>
-            Get #
-          </button>
-          <button onClick={() => navTo("add")}
-            style={{ flex: "0 0 56px", background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: "50%", width: 52, height: 52, fontSize: 26, fontWeight: 700, margin: "-18px auto 0", boxShadow: "0 4px 20px rgba(212,168,83,0.4)" }}>
-            +
-          </button>
-          <button onClick={() => { setFilter("overdue"); setView("dashboard"); }}
-            style={{ flex: 1, background: "none", border: "none", color: overdue > 0 ? "#e74c3c" : th.textDim, fontSize: 11, fontWeight: 500, padding: "6px 0" }}>
-            <div style={{ fontSize: 20 }}>🔔</div>
-            {overdue > 0 ? `${overdue}!` : "Follow-ups"}
-          </button>
-          <button onClick={() => setView("lookup")}
-            style={{ flex: 1, background: "none", border: "none", color: view === "lookup" ? "#d4a853" : th.textDim, fontSize: 11, fontWeight: 500, padding: "6px 0" }}>
-            <div style={{ fontSize: 20 }}>🔍</div>
-            Lookup
-          </button>
+        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: th.tabBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", borderTop: `0.5px solid ${th.border}`, display: "flex", padding: "8px 0 0", paddingBottom: "calc(env(safe-area-inset-bottom) + 6px)", zIndex: 50 }}>
+          {[
+            { icon: "👥", label: "Contacts",    onClick: () => setView("dashboard"),                         active: view === "dashboard" },
+            { icon: "🔳", label: "Get #",       onClick: () => setView("qr"),                                active: view === "qr" },
+            { icon: "＋", label: "Add",          onClick: () => navTo("add"),                                 active: view === "add",    accent: true },
+            { icon: "🔔", label: overdue > 0 ? `${overdue} Due` : "Alerts", onClick: () => { setFilter("overdue"); setView("dashboard"); }, active: filter === "overdue" && view === "dashboard", urgent: overdue > 0 },
+            { icon: "🔍", label: "Lookup",      onClick: () => setView("lookup"),                            active: view === "lookup" },
+          ].map(tab => (
+            <button key={tab.label} onClick={tab.onClick}
+              style={{ flex: 1, background: "none", border: "none", color: tab.active ? "#d4a853" : tab.urgent ? th.red : th.textDim, fontSize: 10, fontWeight: tab.active ? 600 : 400, padding: "2px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+              <div style={{ fontSize: tab.accent ? 26 : 22, lineHeight: 1.2 }}>{tab.icon}</div>
+              <div style={{ letterSpacing: "-0.1px" }}>{tab.label}</div>
+            </button>
+          ))}
         </div>
       )}
     </div>
