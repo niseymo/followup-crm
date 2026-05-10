@@ -24,48 +24,54 @@ const DEFAULT_TEMPLATE = `Hi {name}! This is {myName} from {store}. Great meetin
 
 const THEMES = {
   dark: {
-    appBg:       "#000000",
-    surface:     "#1C1C1E",
-    surfaceDeep: "#2C2C2E",
-    inputBg:     "#1C1C1E",
-    statChipBg:  "#1C1C1E",
-    border:      "rgba(84,84,88,0.65)",
-    text:        "#FFFFFF",
-    textMuted:   "rgba(235,235,245,0.60)",
-    textDim:     "rgba(235,235,245,0.30)",
-    textDimmer:  "rgba(235,235,245,0.18)",
-    btnAltBg:    "#2C2C2E",
-    btnAltText:  "rgba(235,235,245,0.60)",
-    scrollTrack: "#1C1C1E",
-    scrollThumb: "#48484A",
-    navBg:       "rgba(28,28,30,0.92)",
-    tabBg:       "rgba(22,22,24,0.92)",
-    red:         "#FF453A",
-    orange:      "#FF9F0A",
-    green:       "#30D158",
-    blue:        "#0A84FF",
+    appBg:          "linear-gradient(160deg, #1a0a2e 0%, #090f22 40%, #000508 100%)",
+    surface:        "rgba(255,255,255,0.09)",
+    surfaceDeep:    "rgba(255,255,255,0.05)",
+    inputBg:        "rgba(255,255,255,0.07)",
+    statChipBg:     "rgba(255,255,255,0.07)",
+    border:         "rgba(255,255,255,0.16)",
+    text:           "#FFFFFF",
+    textMuted:      "rgba(255,255,255,0.65)",
+    textDim:        "rgba(255,255,255,0.35)",
+    textDimmer:     "rgba(255,255,255,0.20)",
+    btnAltBg:       "rgba(255,255,255,0.08)",
+    btnAltText:     "rgba(255,255,255,0.55)",
+    scrollTrack:    "transparent",
+    scrollThumb:    "rgba(255,255,255,0.15)",
+    navBg:          "rgba(255,255,255,0.07)",
+    tabBg:          "rgba(20,16,36,0.72)",
+    blur:           "blur(40px) saturate(180%)",
+    glassHighlight: "inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12)",
+    glassShadow:    "0 8px 40px rgba(0,0,0,0.45)",
+    red:            "#FF453A",
+    orange:         "#FF9F0A",
+    green:          "#30D158",
+    blue:           "#0A84FF",
   },
   light: {
-    appBg:       "#F2F2F7",
-    surface:     "#FFFFFF",
-    surfaceDeep: "#F2F2F7",
-    inputBg:     "#FFFFFF",
-    statChipBg:  "#FFFFFF",
-    border:      "rgba(60,60,67,0.29)",
-    text:        "#000000",
-    textMuted:   "rgba(60,60,67,0.60)",
-    textDim:     "rgba(60,60,67,0.30)",
-    textDimmer:  "rgba(60,60,67,0.18)",
-    btnAltBg:    "#F2F2F7",
-    btnAltText:  "rgba(60,60,67,0.60)",
-    scrollTrack: "#E5E5EA",
-    scrollThumb: "#C7C7CC",
-    navBg:       "rgba(242,242,247,0.92)",
-    tabBg:       "rgba(249,249,249,0.92)",
-    red:         "#FF3B30",
-    orange:      "#FF9500",
-    green:       "#34C759",
-    blue:        "#007AFF",
+    appBg:          "linear-gradient(160deg, #e8dff5 0%, #d8eaf8 45%, #f5ece0 100%)",
+    surface:        "rgba(255,255,255,0.58)",
+    surfaceDeep:    "rgba(255,255,255,0.38)",
+    inputBg:        "rgba(255,255,255,0.68)",
+    statChipBg:     "rgba(255,255,255,0.55)",
+    border:         "rgba(255,255,255,0.75)",
+    text:           "#000000",
+    textMuted:      "rgba(60,60,67,0.65)",
+    textDim:        "rgba(60,60,67,0.38)",
+    textDimmer:     "rgba(60,60,67,0.22)",
+    btnAltBg:       "rgba(255,255,255,0.45)",
+    btnAltText:     "rgba(60,60,67,0.65)",
+    scrollTrack:    "transparent",
+    scrollThumb:    "rgba(0,0,0,0.12)",
+    navBg:          "rgba(255,255,255,0.52)",
+    tabBg:          "rgba(255,255,255,0.68)",
+    blur:           "blur(40px) saturate(200%) brightness(108%)",
+    glassHighlight: "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(0,0,0,0.04)",
+    glassShadow:    "0 8px 28px rgba(0,0,0,0.09)",
+    red:            "#FF3B30",
+    orange:         "#FF9500",
+    green:          "#34C759",
+    blue:           "#007AFF",
   },
 };
 
@@ -140,6 +146,16 @@ export default function App() {
     ? (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark")
     : themeMode;
   const th = THEMES[effectiveTheme];
+
+  // Liquid Glass base style — spread into any surface that should look like glass
+  const glass = (extra = {}) => ({
+    background:            th.surface,
+    backdropFilter:        th.blur,
+    WebkitBackdropFilter:  th.blur,
+    border:                `1px solid ${th.border}`,
+    boxShadow:             `${th.glassShadow}, ${th.glassHighlight}`,
+    ...extra,
+  });
 
   const myInfo = profiles.find(p => p.id === activeProfileId) || profiles[0] || defaultMyInfo;
 
@@ -492,7 +508,7 @@ export default function App() {
     const days = daysUntil(c.followUpDate);
     const uc   = urgencyColor(days);
     return (
-      <div key={c.id} style={{ background: th.surface, borderRadius: 16, padding: "14px 16px", marginBottom: 10, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div key={c.id} style={{ ...glass({ borderRadius: 20, padding: "14px 16px", marginBottom: 10 }) }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 17, fontWeight: 600, color: th.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.2px" }}>{c.name}</div>
@@ -541,7 +557,7 @@ export default function App() {
 
       {/* Profiles */}
       <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Profiles</div>
-      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 8, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 8 }) }}>
         {profiles.map((p, idx) => (
           <div key={p.id} data-testid={`profile-row-${p.id}`}>
             {idx > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
@@ -574,7 +590,7 @@ export default function App() {
 
       {/* My Info */}
       <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>My Info</div>
-      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 24, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 24 }) }}>
         {[["name","Name"],["title","Title"],["store","Store"],["phone","Phone"],["email","Email"]].map(([k, label], i) => (
           <div key={k}>
             {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
@@ -590,7 +606,7 @@ export default function App() {
 
       {/* Appearance */}
       <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Appearance</div>
-      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 24, padding: "4px", display: "flex", gap: 4, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 24, padding: "4px", display: "flex", gap: 4 }) }}>
         {["auto","light","dark"].map(mode => (
           <button key={mode} data-testid={`theme-${mode}`} onClick={() => setThemeMode(mode)}
             style={{ flex: 1, background: themeMode === mode ? "#d4a853" : "none", color: themeMode === mode ? "#000000" : th.textMuted, border: "none", borderRadius: 10, padding: "9px 4px", fontSize: 14, fontWeight: themeMode === mode ? 700 : 400, textTransform: "capitalize" }}>
@@ -601,7 +617,7 @@ export default function App() {
 
       {/* Categories */}
       <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Interest Categories</div>
-      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 8, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 8 }) }}>
         {categories.map((cat, i) => (
           <div key={cat}>
             {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
@@ -630,7 +646,7 @@ export default function App() {
 
       {/* Message Template */}
       <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Text Message Template</div>
-      <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 12, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 12 }) }}>
         <textarea data-testid="template-textarea" value={msgTemplate}
           onChange={e => setMsgTemplate(e.target.value)} rows={4}
           style={{ width: "100%", background: "none", border: "none", padding: "14px 16px", color: th.text, fontSize: 15, resize: "none", lineHeight: 1.6, outline: "none" }} />
@@ -643,7 +659,7 @@ export default function App() {
           </button>
         ))}
       </div>
-      <div style={{ background: th.surface, borderRadius: 14, padding: "14px 16px", marginBottom: 8, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div style={{ ...glass({ borderRadius: 18, padding: "14px 16px", marginBottom: 8 }) }}>
         <div style={{ fontSize: 11, color: th.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>Preview — sent to "{previewName}"</div>
         <div style={{ fontSize: 14, color: th.textMuted, lineHeight: 1.6 }}>{msgPreview}</div>
       </div>
@@ -681,25 +697,31 @@ export default function App() {
     <div data-testid="app-root" data-theme={effectiveTheme}
       style={{
         fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif",
-        background: th.appBg,
+        background: "transparent",
         color: th.text,
         minHeight: "100dvh",
         display: isDesktop ? "flex" : "block",
         maxWidth: isDesktop ? "none" : 480,
         margin: isDesktop ? 0 : "0 auto",
-        // Push content below Dynamic Island / notch on mobile PWA
         paddingTop: isDesktop ? 0 : "env(safe-area-inset-top)",
+        position: "relative",
       }}>
+
+      {/* Fixed gradient background — glass elements float above this */}
+      <div style={{ position: "fixed", inset: 0, background: th.appBg, zIndex: -1 }} />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        html, body {
+        html {
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
-          background: ${th.appBg};
           overscroll-behavior-y: contain;
           -webkit-tap-highlight-color: transparent;
           min-height: 100dvh;
+        }
+        body {
+          min-height: 100dvh;
+          overscroll-behavior-y: contain;
         }
         input, select, textarea { font-family: inherit; }
         button { cursor: pointer; font-family: inherit; touch-action: manipulation; }
@@ -713,35 +735,36 @@ export default function App() {
           grid-template-columns: ${isWide ? "repeat(2, 1fr)" : "1fr"};
           gap: ${isWide ? "0 16px" : "0"};
         }
+        ::placeholder { color: ${th.textDim}; }
       `}</style>
 
       {/* ── Toast ─────────────────────────────────────────────────────────── */}
       {toast && (
-        <div style={{ position: "fixed", top: "max(calc(env(safe-area-inset-top) + 12px), 20px)", left: "50%", transform: "translateX(-50%)", background: effectiveTheme === "dark" ? "rgba(44,44,46,0.96)" : "rgba(255,255,255,0.96)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", color: toast.type === "error" ? th.red : th.green, padding: "11px 20px", borderRadius: 14, zIndex: 9999, fontSize: 14, fontWeight: 600, boxShadow: "0 4px 24px rgba(0,0,0,0.30)", whiteSpace: "nowrap", maxWidth: "calc(100vw - 40px)", textAlign: "center", border: `0.5px solid ${th.border}` }}>
+        <div style={{ position: "fixed", top: "max(calc(env(safe-area-inset-top) + 14px), 20px)", left: "50%", transform: "translateX(-50%)", ...glass({ borderRadius: 20, padding: "12px 22px", zIndex: 9999, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", maxWidth: "calc(100vw - 40px)", textAlign: "center", color: toast.type === "error" ? th.red : th.green }) }}>
           {toast.msg}
         </div>
       )}
 
       {/* ── QR Modal ──────────────────────────────────────────────────────── */}
       {showQR && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
           onClick={() => setShowQR(false)}>
           <div data-testid="qr-modal"
-            style={{ background: th.surface, borderRadius: 20, padding: 28, textAlign: "center", maxWidth: 340, width: "100%" }}
+            style={{ ...glass({ borderRadius: 28, padding: 28, textAlign: "center", maxWidth: 340, width: "100%" }) }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: "#d4a853", marginBottom: 4 }}>Scan to Add Contact</div>
-            <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 20 }}>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#d4a853", marginBottom: 4, letterSpacing: "-0.3px" }}>Scan to Add Contact</div>
+            <div style={{ fontSize: 13, color: th.textMuted, marginBottom: 20 }}>
               {myInfo.name || "Your contact"}{myInfo.store ? ` · ${myInfo.store}` : ""}
             </div>
             {qrDataUrl && (
               <img data-testid="qr-image" src={qrDataUrl} alt="Contact QR code"
-                style={{ width: 252, height: 252, borderRadius: 12, display: "block", margin: "0 auto 20px" }} />
+                style={{ width: 252, height: 252, borderRadius: 16, display: "block", margin: "0 auto 20px" }} />
             )}
-            <div style={{ fontSize: 11, color: th.textDim, marginBottom: 20, lineHeight: 1.5 }}>
-              Customer scans this with their camera app to save your contact info directly to their phone.
+            <div style={{ fontSize: 12, color: th.textDim, marginBottom: 20, lineHeight: 1.5 }}>
+              Customer scans with their camera to save your contact info.
             </div>
             <button onClick={() => setShowQR(false)}
-              style={{ width: "100%", background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 600 }}>
+              style={{ width: "100%", background: "#d4a853", color: "#000000", border: "none", borderRadius: 14, padding: "14px", fontSize: 16, fontWeight: 600, boxShadow: "0 2px 12px rgba(212,168,83,0.4), inset 0 1px 0 rgba(255,255,255,0.25)" }}>
               Done
             </button>
           </div>
@@ -750,26 +773,26 @@ export default function App() {
 
       {/* ── Settings Modal ────────────────────────────────────────────────── */}
       {showMyInfo && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center" }}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center" }}
           onClick={() => setShowMyInfo(false)}>
           <div style={{
-            background: th.appBg,
-            width: "100%",
-            maxWidth: isDesktop ? 560 : 480,
-            borderRadius: isDesktop ? 20 : "20px 20px 0 0",
-            padding: "0 20px 0",
-            paddingBottom: isDesktop ? 0 : "calc(env(safe-area-inset-bottom))",
-            maxHeight: isDesktop ? "90dvh" : "92dvh",
-            overflowY: "auto",
-            margin: isDesktop ? "0 16px" : "0 auto",
+            ...glass({
+              width: "100%",
+              maxWidth: isDesktop ? 560 : 480,
+              borderRadius: isDesktop ? 28 : "28px 28px 0 0",
+              padding: "0 20px 0",
+              paddingBottom: isDesktop ? 0 : "calc(env(safe-area-inset-bottom))",
+              maxHeight: isDesktop ? "90dvh" : "92dvh",
+              overflowY: "auto",
+              margin: isDesktop ? "0 16px" : "0 auto",
+            })
           }} onClick={e => e.stopPropagation()}>
-            {/* iOS sheet grabber handle */}
             {!isDesktop && (
-              <div style={{ display: "flex", justifyContent: "center", paddingTop: 10, paddingBottom: 6 }}>
+              <div style={{ display: "flex", justifyContent: "center", paddingTop: 12, paddingBottom: 6 }}>
                 <div style={{ width: 36, height: 4, borderRadius: 2, background: th.border }} />
               </div>
             )}
-            <div style={{ padding: isDesktop ? "24px 0" : "8px 0 24px" }}>
+            <div style={{ padding: isDesktop ? "24px 0" : "8px 0 28px" }}>
               {SettingsPanel}
             </div>
           </div>
@@ -788,7 +811,9 @@ export default function App() {
           top: 0,
           overflowY: "auto",
           background: th.surface,
-          borderRight: `0.5px solid ${th.border}`,
+          backdropFilter: th.blur,
+          WebkitBackdropFilter: th.blur,
+          borderRight: `1px solid ${th.border}`,
           display: "flex",
           flexDirection: "column",
           padding: "28px 16px 24px",
@@ -821,7 +846,7 @@ export default function App() {
 
           {/* Stats */}
           <div style={{ fontSize: 11, color: th.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 }}>Overview</div>
-          <div style={{ background: th.btnAltBg, borderRadius: 14, overflow: "hidden", marginBottom: 24 }}>
+          <div style={{ ...glass({ borderRadius: 16, overflow: "hidden", marginBottom: 24 }) }}>
             {stats.map((s, i) => (
               <div key={s.f}>
                 {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 14 }} />}
@@ -860,32 +885,30 @@ export default function App() {
         minWidth: 0,
         height: isDesktop ? "100dvh" : "auto",
         overflowY: isDesktop ? "auto" : "visible",
-        paddingBottom: isDesktop ? 0 : "calc(env(safe-area-inset-bottom) + 90px)",
+        paddingBottom: isDesktop ? 0 : "calc(env(safe-area-inset-bottom) + 100px)",
       }}>
         {Banners}
 
         {/* ── Mobile-only header ─────────────────────────────────────────── */}
         {!isDesktop && (
-          <div style={{ background: th.navBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", borderBottom: `0.5px solid ${th.border}`, position: "sticky", top: 0, zIndex: 40 }}>
-            {/* Nav bar row */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px 10px" }}>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, color: "#d4a853", letterSpacing: "-0.5px", lineHeight: 1 }}>Follow-Up</div>
+          <div style={{ ...glass({ borderBottom: `1px solid ${th.border}`, position: "sticky", top: 0, zIndex: 40 }), boxShadow: `${th.glassShadow}, ${th.glassHighlight}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px 10px" }}>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 30, color: "#d4a853", letterSpacing: "-0.5px", lineHeight: 1 }}>Follow-Up</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <button data-testid="qr-btn" onClick={openQR}
-                  style={{ background: "rgba(212,168,83,0.15)", color: "#d4a853", border: "none", borderRadius: 20, padding: "6px 12px", fontSize: 13, fontWeight: 600 }}>
+                  style={{ ...glass({ borderRadius: 20, padding: "7px 14px", fontSize: 13, fontWeight: 600, color: "#d4a853" }), boxShadow: "0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }}>
                   Share Card
                 </button>
                 <button data-testid="settings-btn" onClick={() => setShowMyInfo(true)}
-                  style={{ background: th.btnAltBg, color: th.textMuted, border: "none", borderRadius: 20, width: 34, height: 34, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  style={{ ...glass({ borderRadius: 20, width: 36, height: 36, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", color: th.textMuted }), boxShadow: "0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }}>
                   ⚙️
                 </button>
               </div>
             </div>
-            {/* Stat filter chips */}
-            <div style={{ display: "flex", gap: 8, padding: "0 16px 12px", overflowX: "auto" }}>
+            <div style={{ display: "flex", gap: 8, padding: "0 16px 14px", overflowX: "auto" }}>
               {stats.map(s => (
                 <button key={s.f} onClick={() => setFilter(filter === s.f ? "all" : s.f)}
-                  style={{ flex: "0 0 auto", background: filter === s.f ? s.color + "22" : th.btnAltBg, border: `1px solid ${filter === s.f ? s.color + "88" : th.border}`, borderRadius: 20, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+                  style={{ flex: "0 0 auto", background: filter === s.f ? s.color + "28" : "rgba(255,255,255,0.08)", backdropFilter: th.blur, WebkitBackdropFilter: th.blur, border: `1px solid ${filter === s.f ? s.color + "60" : th.border}`, borderRadius: 20, padding: "7px 14px", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)" }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: s.color }}>{s.val}</span>
                   <span style={{ fontSize: 12, color: filter === s.f ? s.color : th.textMuted, fontWeight: filter === s.f ? 600 : 400 }}>{s.label}</span>
                 </button>
@@ -966,7 +989,7 @@ export default function App() {
             )}
 
             {/* Grouped input card */}
-            <div style={{ background: th.surface, borderRadius: 14, overflow: "hidden", marginBottom: 16, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 16 }) }}>
               {[["name","Customer Name","text","Full name"],["phone","Phone Number","tel","Mobile number"]].map(([k, label, type, placeholder], i) => (
                 <div key={k}>
                   {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
@@ -991,7 +1014,7 @@ export default function App() {
             </div>
 
             {/* Notes */}
-            <div style={{ background: th.surface, borderRadius: 14, marginBottom: 16, overflow: "hidden", boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <div style={{ ...glass({ borderRadius: 18, marginBottom: 16, overflow: "hidden" }) }}>
               <textarea data-testid="textarea-notes" value={form.notes}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
                 placeholder="Budget, style preference, timeline…"
@@ -1004,7 +1027,7 @@ export default function App() {
               <div style={{ display: "flex", gap: 8 }}>
                 {FOLLOW_UP_INTERVALS.map(i => (
                   <button key={i.days} onClick={() => setForm(f => ({ ...f, followUpDays: i.days }))}
-                    style={{ flex: 1, background: form.followUpDays === i.days ? "#d4a853" : th.surface, color: form.followUpDays === i.days ? "#000000" : th.textMuted, border: "none", borderRadius: 12, padding: "10px 4px", fontSize: 13, fontWeight: form.followUpDays === i.days ? 700 : 400, boxShadow: effectiveTheme === "dark" ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
+                    style={{ flex: 1, ...(form.followUpDays === i.days ? { background: "#d4a853", color: "#000", border: "none", boxShadow: "0 2px 12px rgba(212,168,83,0.4), inset 0 1px 0 rgba(255,255,255,0.3)" } : glass({ color: th.textMuted })), borderRadius: 14, padding: "10px 4px", fontSize: 13, fontWeight: form.followUpDays === i.days ? 700 : 400 }}>
                     {i.label}
                   </button>
                 ))}
@@ -1044,9 +1067,9 @@ export default function App() {
                 onChange={e => setLookupQuery(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && runLookup()}
                 placeholder="e.g. What's eight-way hand-tied?"
-                style={{ flex: 1, background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, padding: "12px 14px", color: th.text, fontSize: 14 }} />
+                style={{ flex: 1, ...glass({ borderRadius: 16, padding: "13px 16px", color: th.text, fontSize: 15, outline: "none" }) }} />
               <button onClick={() => runLookup()} disabled={lookupLoading || !lookupQuery.trim()}
-                style={{ background: lookupLoading || !lookupQuery.trim() ? th.btnAltBg : "#d4a853", color: lookupLoading || !lookupQuery.trim() ? th.textDim : "#0f0f13", border: "none", borderRadius: 10, padding: "0 20px", fontSize: 20, fontWeight: 700, cursor: lookupLoading || !lookupQuery.trim() ? "not-allowed" : "pointer" }}>
+                style={{ ...(lookupLoading || !lookupQuery.trim() ? glass({ color: th.textDim }) : { background: "#d4a853", color: "#000", border: "none", boxShadow: "0 2px 12px rgba(212,168,83,0.4)" }), borderRadius: 16, padding: "0 22px", fontSize: 20, fontWeight: 700 }}>
                 {lookupLoading ? "…" : "→"}
               </button>
             </div>
@@ -1079,7 +1102,7 @@ export default function App() {
             )}
 
             {lookupAnswer && (
-              <div style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 14, padding: "16px 18px", marginTop: 4 }}>
+              <div style={{ ...glass({ borderRadius: 20, padding: "16px 18px", marginTop: 4 }) }}>
                 <div style={{ fontSize: 11, color: th.textDim, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Answer</div>
                 <div style={{ fontSize: 14, color: th.text, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{lookupAnswer}</div>
                 <button onClick={() => { setLookupAnswer(null); setLookupQuery(""); lookupInputRef.current?.focus(); }}
@@ -1139,7 +1162,7 @@ export default function App() {
                 </div>
 
                 {/* Message preview bubble */}
-                <div style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 16, padding: "12px 16px", maxWidth: 320, width: "100%", marginBottom: 12 }}>
+                <div style={{ ...glass({ borderRadius: 18, padding: "12px 16px", maxWidth: 320, width: "100%", marginBottom: 12 }) }}>
                   <div style={{ fontSize: 10, color: th.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Message they'll send you</div>
                   <div style={{ background: "#34c759", borderRadius: "14px 14px 4px 14px", padding: "10px 14px", display: "inline-block", maxWidth: "100%" }}>
                     <div style={{ fontSize: 14, color: "#ffffff", lineHeight: 1.5 }}>
@@ -1157,22 +1180,42 @@ export default function App() {
         )}
       </div>
 
-      {/* ── Mobile bottom tab bar (iOS style) ───────────────────────────── */}
+      {/* ── Mobile floating Liquid Glass tab bar (iOS 26 style) ─────────── */}
       {!isDesktop && (
-        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: th.tabBg, backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", borderTop: `0.5px solid ${th.border}`, display: "flex", padding: "8px 0 0", paddingBottom: "calc(env(safe-area-inset-bottom) + 6px)", zIndex: 50 }}>
+        <div style={{
+          position: "fixed",
+          bottom: "calc(env(safe-area-inset-bottom) + 14px)",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: th.tabBg,
+          backdropFilter: th.blur,
+          WebkitBackdropFilter: th.blur,
+          border: `1px solid ${th.border}`,
+          boxShadow: `${th.glassShadow}, ${th.glassHighlight}`,
+          borderRadius: 30,
+          display: "flex",
+          alignItems: "center",
+          padding: "10px 8px",
+          gap: 2,
+          zIndex: 50,
+          minWidth: 300,
+          maxWidth: "calc(100vw - 32px)",
+        }}>
           {[
-            { icon: "👥", label: "Contacts",    onClick: () => setView("dashboard"),                         active: view === "dashboard" },
-            { icon: "🔳", label: "Get #",       onClick: () => setView("qr"),                                active: view === "qr" },
-            { icon: "＋", label: "Add",          onClick: () => navTo("add"),                                 active: view === "add",    accent: true },
-            { icon: "🔔", label: overdue > 0 ? `${overdue} Due` : "Alerts", onClick: () => { setFilter("overdue"); setView("dashboard"); }, active: filter === "overdue" && view === "dashboard", urgent: overdue > 0 },
-            { icon: "🔍", label: "Lookup",      onClick: () => setView("lookup"),                            active: view === "lookup" },
-          ].map(tab => (
-            <button key={tab.label} onClick={tab.onClick}
-              style={{ flex: 1, background: "none", border: "none", color: tab.active ? "#d4a853" : tab.urgent ? th.red : th.textDim, fontSize: 10, fontWeight: tab.active ? 600 : 400, padding: "2px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-              <div style={{ fontSize: tab.accent ? 26 : 22, lineHeight: 1.2 }}>{tab.icon}</div>
-              <div style={{ letterSpacing: "-0.1px" }}>{tab.label}</div>
-            </button>
-          ))}
+            { icon: "👥", label: "Contacts", onClick: () => setView("dashboard"),                             active: view === "dashboard" },
+            { icon: "🔳", label: "Get #",    onClick: () => setView("qr"),                                    active: view === "qr" },
+            { icon: "＋", label: "Add",       onClick: () => navTo("add"),                                    active: view === "add" },
+            { icon: "🔔", label: overdue > 0 ? `${overdue}` : "Alerts", onClick: () => { setFilter("overdue"); setView("dashboard"); }, active: filter === "overdue" && view === "dashboard", urgent: overdue > 0 },
+            { icon: "🔍", label: "Lookup",   onClick: () => setView("lookup"),                                active: view === "lookup" },
+          ].map(tab => {
+            const isActive = tab.active;
+            return (
+              <button key={tab.label} onClick={tab.onClick} style={{ flex: 1, border: "none", background: isActive ? "rgba(212,168,83,0.22)" : "none", backdropFilter: isActive ? "blur(10px)" : "none", WebkitBackdropFilter: isActive ? "blur(10px)" : "none", borderRadius: 22, color: isActive ? "#d4a853" : tab.urgent ? th.red : th.textMuted, fontSize: 10, fontWeight: isActive ? 700 : 400, padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, boxShadow: isActive ? "inset 0 1px 0 rgba(255,255,255,0.18)" : "none", minWidth: 52 }}>
+                <div style={{ fontSize: 22, lineHeight: 1.15 }}>{tab.icon}</div>
+                <div style={{ letterSpacing: "-0.1px", fontSize: tab.urgent ? 11 : 10 }}>{tab.label}</div>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
