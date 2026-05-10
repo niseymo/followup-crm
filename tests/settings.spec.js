@@ -120,7 +120,7 @@ test.describe('Settings Modal', () => {
     })
 
     await expect(page.getByText(/Restored 1 contact/)).toBeVisible()
-    await page.getByRole('button', { name: 'Done' }).tap()
+    await page.getByRole('button', { name: 'Done', exact: true }).tap()
     await expect(page.getByText('Restored Customer')).toBeVisible()
   })
 })

@@ -85,18 +85,22 @@ export async function seedContact(page, contact = {}) {
   await page.waitForLoadState("networkidle");
 }
 
+function toLocalDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function getTodayDate() {
-  return new Date().toISOString().split("T")[0];
+  return toLocalDate(new Date());
 }
 
 export function getFutureDate(days) {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  return toLocalDate(d);
 }
 
 export function getPastDate(days) {
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return d.toISOString().split("T")[0];
+  return toLocalDate(d);
 }

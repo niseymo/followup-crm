@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 import { db } from "./db.js";
+
+const cn = (...inputs) => twMerge(clsx(inputs));
 
 // Kept only for one-time migration of existing localStorage data.
 const STORAGE_KEY = "furniture_crm_v1";
@@ -9,7 +13,7 @@ const DISMISS_KEY = "followup_backup_dismissed_until";
 const DEFAULT_CATEGORIES = [
   "Sofa / Sectional", "Bedroom Set", "Dining Table", "Home Office",
   "Mattress", "Accent Chairs", "Storage / Shelving", "Outdoor",
-  "Kids Furniture", "Just Browsing"
+  "Kids Furniture", "Just Browsing",
 ];
 
 const FOLLOW_UP_INTERVALS = [
@@ -20,89 +24,46 @@ const FOLLOW_UP_INTERVALS = [
   { label: "1 Month",  days: 30 },
 ];
 
-const DEFAULT_TEMPLATE = `Hi {name}! This is {myName} from {store}. Great meeting you today — feel free to reach out if you have any questions about what you saw. 😊`;
+const DEFAULT_TEMPLATE =
+  `Hi {name}! This is {myName} from {store}. Great meeting you today — feel free to reach out if you have any questions about what you saw. 😊`;
 
-const THEMES = {
-  dark: {
-    appBg:          "linear-gradient(160deg, #1a0a2e 0%, #090f22 40%, #000508 100%)",
-    surface:        "rgba(255,255,255,0.09)",
-    surfaceDeep:    "rgba(255,255,255,0.05)",
-    inputBg:        "rgba(255,255,255,0.07)",
-    statChipBg:     "rgba(255,255,255,0.07)",
-    border:         "rgba(255,255,255,0.16)",
-    text:           "#FFFFFF",
-    textMuted:      "rgba(255,255,255,0.65)",
-    textDim:        "rgba(255,255,255,0.35)",
-    textDimmer:     "rgba(255,255,255,0.20)",
-    btnAltBg:       "rgba(255,255,255,0.08)",
-    btnAltText:     "rgba(255,255,255,0.55)",
-    scrollTrack:    "transparent",
-    scrollThumb:    "rgba(255,255,255,0.15)",
-    navBg:          "rgba(255,255,255,0.07)",
-    tabBg:          "rgba(20,16,36,0.72)",
-    blur:           "blur(40px) saturate(180%)",
-    glassHighlight: "inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12)",
-    glassShadow:    "0 8px 40px rgba(0,0,0,0.45)",
-    red:            "#FF453A",
-    orange:         "#FF9F0A",
-    green:          "#30D158",
-    blue:           "#0A84FF",
-  },
-  light: {
-    appBg:          "linear-gradient(160deg, #e8dff5 0%, #d8eaf8 45%, #f5ece0 100%)",
-    surface:        "rgba(255,255,255,0.58)",
-    surfaceDeep:    "rgba(255,255,255,0.38)",
-    inputBg:        "rgba(255,255,255,0.68)",
-    statChipBg:     "rgba(255,255,255,0.55)",
-    border:         "rgba(255,255,255,0.75)",
-    text:           "#000000",
-    textMuted:      "rgba(60,60,67,0.65)",
-    textDim:        "rgba(60,60,67,0.38)",
-    textDimmer:     "rgba(60,60,67,0.22)",
-    btnAltBg:       "rgba(255,255,255,0.45)",
-    btnAltText:     "rgba(60,60,67,0.65)",
-    scrollTrack:    "transparent",
-    scrollThumb:    "rgba(0,0,0,0.12)",
-    navBg:          "rgba(255,255,255,0.52)",
-    tabBg:          "rgba(255,255,255,0.68)",
-    blur:           "blur(40px) saturate(200%) brightness(108%)",
-    glassHighlight: "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(0,0,0,0.04)",
-    glassShadow:    "0 8px 28px rgba(0,0,0,0.09)",
-    red:            "#FF3B30",
-    orange:         "#FF9500",
-    green:          "#34C759",
-    blue:           "#007AFF",
-  },
+// ── Static urgency class maps (full strings required for Tailwind purging) ──
+const UGY = {
+  overdue: { badge: "bg-red-500/15 text-red-500",                                        text: "text-red-500" },
+  today:   { badge: "bg-orange-500/15 text-orange-500",                                   text: "text-orange-500" },
+  soon:    { badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400",                 text: "text-amber-600 dark:text-amber-400" },
+  future:  { badge: "bg-green-500/15 text-green-600 dark:text-green-500",                 text: "text-green-600 dark:text-green-500" },
 };
 
 function useWindowWidth() {
   const [w, setW] = useState(typeof window !== "undefined" ? window.innerWidth : 480);
   useEffect(() => {
-    const handler = () => setW(window.innerWidth);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
+    const h = () => setW(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
   }, []);
   return w;
 }
 
 function daysUntil(dateStr) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const [y, m, day] = dateStr.split('-').map(Number);
+  const d = new Date(y, m - 1, day);
   return Math.round((d - today) / 86400000);
 }
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
-function urgencyColor(days) {
-  if (days < 0)  return "#FF3B30";
-  if (days === 0) return "#FF9500";
-  if (days <= 2)  return "#FF9F0A";
-  return "#34C759";
+function urgencyClasses(days) {
+  if (days < 0)   return UGY.overdue;
+  if (days === 0)  return UGY.today;
+  if (days <= 2)   return UGY.soon;
+  return UGY.future;
 }
 function urgencyLabel(days) {
-  if (days < 0)  return `${Math.abs(days)}d overdue`;
-  if (days === 0) return "Today";
-  if (days === 1) return "Tomorrow";
+  if (days < 0)   return `${Math.abs(days)}d overdue`;
+  if (days === 0)  return "Today";
+  if (days === 1)  return "Tomorrow";
   return `In ${days}d`;
 }
 
@@ -138,26 +99,43 @@ export default function App() {
   const [qrDataUrl,      setQrDataUrl]      = useState(null);
   const [smsQrUrl,       setSmsQrUrl]       = useState(null);
   const [lastExportedAt, setLastExportedAt] = useState(null);
-  // Skip the first save-effect run — it fires with default state before the load effect's
-  // setState calls have been applied, which would overwrite saved data with empty defaults.
+  const [qrCustomerName, setQrCustomerName] = useState("");
+  const [qrItems,        setQrItems]        = useState([]);
+  const [qrNewItem,      setQrNewItem]      = useState("");
+  const [qrShowCode,     setQrShowCode]     = useState(false);
   const saveSkipRef = useRef(true);
 
-  const effectiveTheme = themeMode === "auto"
-    ? (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark")
-    : themeMode;
-  const th = THEMES[effectiveTheme];
+  // Compute the resolved theme for data-theme attribute (used by Playwright tests).
+  const effectiveTheme =
+    themeMode === "auto"
+      ? (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark")
+      : themeMode;
 
-  // Liquid Glass base style — spread into any surface that should look like glass
-  const glass = (extra = {}) => ({
-    background:            th.surface,
-    backdropFilter:        th.blur,
-    WebkitBackdropFilter:  th.blur,
-    border:                `1px solid ${th.border}`,
-    boxShadow:             `${th.glassShadow}, ${th.glassHighlight}`,
-    ...extra,
-  });
+  // Sync dark class on <html> for Tailwind dark: variants.
+  useEffect(() => {
+    const root = document.documentElement;
+    const apply = () => {
+      const isDark =
+        themeMode === "dark" ||
+        (themeMode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      root.classList.toggle("dark", isDark);
+    };
+    apply();
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [themeMode]);
 
   const myInfo = profiles.find(p => p.id === activeProfileId) || profiles[0] || defaultMyInfo;
+
+  const qrSmsBody = (() => {
+    const parts = [`Hi ${myInfo.name || "there"}!`];
+    if (qrCustomerName) parts.push(`This is ${qrCustomerName}.`);
+    if (myInfo.store)   parts.push(`I visited ${myInfo.store} today.`);
+    if (qrItems.length) parts.push(`I was looking at: ${qrItems.join(", ")}.`);
+    parts.push("Please reach out! 😊");
+    return parts.join(" ");
+  })();
 
   function updateActiveProfile(updater) {
     setProfiles(ps => ps.map(p =>
@@ -179,9 +157,9 @@ export default function App() {
     if (activeProfileId === id) setActiveProfileId(profiles.find(p => p.id !== id)?.id || "default");
   }
 
+  // ── Data load + migration ──────────────────────────────────────────────────
   useEffect(() => {
     async function load() {
-      // One-time migration: if localStorage has existing data and Dexie is empty, import it.
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         try {
@@ -202,8 +180,7 @@ export default function App() {
         }
       }
 
-      // Load from Dexie.
-      const [storedContacts, profiles, activeId, template, theme, cats, lastExp] = await Promise.all([
+      const [storedContacts, profs, activeId, template, theme, cats, lastExp] = await Promise.all([
         db.contacts.toArray(),
         db.settings.get("profiles"),
         db.settings.get("activeProfileId"),
@@ -214,22 +191,21 @@ export default function App() {
       ]);
 
       if (storedContacts.length)  setContacts(storedContacts);
-      if (profiles?.value)        setProfiles(profiles.value);
+      if (profs?.value)           setProfiles(profs.value);
       if (activeId?.value)        setActiveProfileId(activeId.value);
       if (template?.value)        setMsgTemplate(template.value);
       if (theme?.value)           setThemeMode(theme.value);
       if (lastExp?.value)         setLastExportedAt(lastExp.value);
       setCategories(cats?.value || DEFAULT_CATEGORIES);
 
-      // Backup banner.
       const dismissedUntil = localStorage.getItem(DISMISS_KEY);
       const now = Date.now();
       if (!dismissedUntil || now >= Number(dismissedUntil)) {
         const lastExport = lastExp?.value ? new Date(lastExp.value).getTime() : 0;
         if (now - lastExport > 7 * 24 * 60 * 60 * 1000) setShowBackupBanner(true);
+        else setShowBackupBanner(false);
       }
 
-      // Warn if storage is getting full (>80% used).
       if (navigator.storage?.estimate) {
         const { usage, quota } = await navigator.storage.estimate();
         if (usage / quota > 0.8) {
@@ -243,6 +219,7 @@ export default function App() {
     });
   }, []);
 
+  // ── Persist to Dexie ──────────────────────────────────────────────────────
   useEffect(() => {
     if (saveSkipRef.current) { saveSkipRef.current = false; return; }
     const onQuota = (err) => {
@@ -260,6 +237,7 @@ export default function App() {
     ]).catch(onQuota);
   }, [contacts, profiles, activeProfileId, msgTemplate, themeMode, categories, lastExportedAt]);
 
+  // ── Service-worker update detection ───────────────────────────────────────
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").then((reg) => {
@@ -277,16 +255,17 @@ export default function App() {
     navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload());
   }, []);
 
+  // ── SMS QR code generation ────────────────────────────────────────────────
   useEffect(() => {
     if (view !== "qr" || !myInfo.phone) { setSmsQrUrl(null); return; }
     const phone = myInfo.phone.replace(/\D/g, "");
     const e164  = phone.length === 10 ? `+1${phone}` : `+${phone}`;
-    const body  = `Hi ${myInfo.name || "there"}! Just visited ${myInfo.store || "the store"} today — wanted to stay in touch 😊`;
-    QRCode.toDataURL(`sms:${e164}?body=${encodeURIComponent(body)}`, {
+    QRCode.toDataURL(`sms:${e164}?body=${encodeURIComponent(qrSmsBody)}`, {
       width: 300, margin: 2, color: { dark: "#000000", light: "#ffffff" },
     }).then(setSmsQrUrl).catch(() => showToast("Could not generate QR", "error"));
-  }, [view, myInfo.phone, myInfo.name, myInfo.store]);
+  }, [view, myInfo.phone, qrSmsBody]);
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
   function applyUpdate() {
     waitingSWRef.current?.postMessage({ type: "SKIP_WAITING" });
     setShowUpdateBanner(false);
@@ -318,7 +297,6 @@ export default function App() {
     } else {
       setContacts(cs => [record, ...cs]);
       showToast("Contact added");
-      // Request persistent storage on first save so the browser won't evict data.
       navigator.storage?.persist?.();
     }
     setForm({ name: "", phone: "", interest: "", notes: "", followUpDays: 7 });
@@ -380,7 +358,6 @@ export default function App() {
       try {
         const parsed = JSON.parse(ev.target.result);
         if (!parsed.contacts) return showToast("Invalid backup file", "error");
-        // Clear existing Dexie contacts before restore so old records don't persist.
         await db.contacts.clear();
         setContacts(parsed.contacts);
         if (parsed.profiles) {
@@ -421,7 +398,11 @@ export default function App() {
   }
   async function openQR() {
     try {
-      const url = await QRCode.toDataURL(buildVCard(), { width: 280, margin: 2, color: { dark: th.text, light: th.surface } });
+      const isDark = document.documentElement.classList.contains("dark");
+      const url = await QRCode.toDataURL(buildVCard(), {
+        width: 280, margin: 2,
+        color: { dark: isDark ? "#ffffff" : "#000000", light: isDark ? "#18181b" : "#ffffff" },
+      });
       setQrDataUrl(url);
       setShowQR(true);
     } catch { showToast("Could not generate QR code", "error"); }
@@ -444,6 +425,13 @@ export default function App() {
     }
   }
 
+  function navTo(v) {
+    if (v === "add") { setEditId(null); setForm({ name: "", phone: "", interest: "", notes: "", followUpDays: 7 }); }
+    if (v === "qr")  { setQrCustomerName(""); setQrItems([]); setQrNewItem(""); setQrShowCode(false); }
+    setView(v);
+  }
+
+  // ── Derived data ──────────────────────────────────────────────────────────
   const activeContacts = contacts.filter(c => !c.done);
   const filtered = activeContacts.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search);
@@ -461,42 +449,41 @@ export default function App() {
   const previewName = "Sarah";
   const msgPreview  = buildMessage(previewName);
 
-  const stats = [
-    { label: "Total",      val: activeContacts.length, color: th.textMuted, f: "all"       },
-    { label: "Overdue",    val: overdue,               color: th.red,        f: "overdue"   },
-    { label: "Today",      val: dueToday,              color: th.orange,     f: "today"     },
-    { label: "Not Texted", val: notTexted,             color: th.blue,       f: "not_texted"},
+  // Static class strings — must be complete for Tailwind purging.
+  const STAT_META = [
+    { label: "Total",      val: activeContacts.length, valCls: "text-zinc-500 dark:text-zinc-400", inactiveCls: "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400",  activeCls: "bg-zinc-200 dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-200",  f: "all"        },
+    { label: "Overdue",    val: overdue,               valCls: "text-red-500",                      inactiveCls: "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-500",                    activeCls: "bg-red-100 dark:bg-red-500/20 border-red-400 dark:border-red-500/50 text-red-600 dark:text-red-400",    f: "overdue"    },
+    { label: "Today",      val: dueToday,              valCls: "text-orange-500",                   inactiveCls: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20 text-orange-500",      activeCls: "bg-orange-100 dark:bg-orange-500/20 border-orange-400 dark:border-orange-500/50 text-orange-600 dark:text-orange-400", f: "today"      },
+    { label: "Not Texted", val: notTexted,             valCls: "text-blue-500",                     inactiveCls: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-500",               activeCls: "bg-blue-100 dark:bg-blue-500/20 border-blue-400 dark:border-blue-500/50 text-blue-600 dark:text-blue-400",    f: "not_texted" },
   ];
 
-  function navTo(v) {
-    if (v === "add") { setEditId(null); setForm({ name: "", phone: "", interest: "", notes: "", followUpDays: 7 }); }
-    setView(v);
-  }
-
-  // ─── Shared sub-components ─────────────────────────────────────────────────
+  // ── Sub-components ────────────────────────────────────────────────────────
 
   const Banners = (
     <>
       {showUpdateBanner && (
-        <div data-testid="update-banner" style={{ background: `${th.blue}18`, borderBottom: `0.5px solid ${th.border}`, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ flex: 1, fontSize: 14, color: th.blue, fontWeight: 500 }}>🆕 New version available</div>
+        <div data-testid="update-banner"
+          className="bg-blue-50 dark:bg-blue-500/5 border-b border-zinc-200 dark:border-zinc-800 px-4 py-2.5 flex items-center gap-2.5">
+          <div className="flex-1 text-sm text-blue-500 font-medium">🆕 New version available</div>
           <button data-testid="update-banner-apply" onClick={applyUpdate}
-            style={{ background: th.blue, color: "#ffffff", border: "none", borderRadius: 20, padding: "7px 14px", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
+            className="bg-blue-500 text-white rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap shrink-0 border-0">
             Update
           </button>
         </div>
       )}
       {showBackupBanner && (
-        <div data-testid="backup-banner" style={{ background: `${th.orange}14`, borderBottom: `0.5px solid ${th.border}`, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ flex: 1, fontSize: 14, color: th.orange, lineHeight: 1.4, fontWeight: 500 }}>
+        <div data-testid="backup-banner"
+          className="bg-amber-50 dark:bg-amber-500/5 border-b border-zinc-200 dark:border-zinc-800 px-4 py-2.5 flex items-center gap-2.5">
+          <div className="flex-1 text-sm text-amber-600 dark:text-amber-500 leading-snug font-medium">
             ⚠️ No backup in 7+ days
           </div>
-          <button data-testid="backup-banner-now" onClick={() => { setShowMyInfo(true); setShowBackupBanner(false); }}
-            style={{ background: th.orange, color: "#ffffff", border: "none", borderRadius: 20, padding: "7px 14px", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
+          <button data-testid="backup-banner-now"
+            onClick={() => { setShowMyInfo(true); setShowBackupBanner(false); }}
+            className="bg-[#d4a853] text-zinc-950 rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap shrink-0 border-0">
             Backup now
           </button>
           <button data-testid="backup-banner-dismiss" onClick={dismissBackupBanner}
-            style={{ background: "none", border: "none", color: th.textDim, fontSize: 20, lineHeight: 1, padding: "0 4px" }}>
+            className="text-zinc-400 dark:text-zinc-500 text-xl leading-none px-1 border-0 bg-transparent">
             ×
           </button>
         </div>
@@ -506,46 +493,53 @@ export default function App() {
 
   const ContactCard = (c) => {
     const days = daysUntil(c.followUpDate);
-    const uc   = urgencyColor(days);
+    const uc   = urgencyClasses(days);
+    const lbl  = urgencyLabel(days);
     return (
-      <div key={c.id} style={{ ...glass({ borderRadius: 20, padding: "14px 16px", marginBottom: 10 }) }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 600, color: th.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.2px" }}>{c.name}</div>
-            <div style={{ fontSize: 14, color: th.textMuted, marginTop: 2 }}>{c.interest || "No interest noted"}</div>
-            {c.notes && <div style={{ fontSize: 13, color: th.textDim, marginTop: 4, fontStyle: "italic" }}>"{c.notes}"</div>}
+      <div key={c.id}
+        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mb-2.5">
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0">
+            <div className="text-[17px] font-semibold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">{c.name}</div>
+            <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{c.interest || "No interest noted"}</div>
+            {c.notes && <div className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 italic">"{c.notes}"</div>}
           </div>
-          <div style={{ textAlign: "right", minWidth: 76, marginLeft: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: uc, background: uc + "22", borderRadius: 20, padding: "4px 10px", display: "inline-block", letterSpacing: "-0.1px" }}>
-              {urgencyLabel(days)}
+          <div className="text-right min-w-[76px] ml-2.5 shrink-0">
+            <div data-testid="urgency-badge" className={cn("text-xs font-bold rounded-full px-2.5 py-1 inline-block", uc.badge)}>
+              {lbl}
             </div>
-            <div style={{ fontSize: 11, color: th.textDim, marginTop: 4 }}>{formatDate(c.followUpDate)}</div>
+            <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">{formatDate(c.followUpDate)}</div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <div className="flex gap-2 mt-3">
           <a href={smsLink(c.phone, c.name)} onClick={() => markTexted(c.id)}
-            style={{ flex: 2, background: c.texted ? `${th.green}18` : `${th.green}22`, color: c.texted ? th.textMuted : th.green, borderRadius: 12, padding: "10px 12px", fontSize: 14, fontWeight: 600, textAlign: "center", textDecoration: "none", letterSpacing: "-0.1px" }}>
-            {c.texted ? "✓ Texted" : "📱 Text"}
+            className={cn(
+              "flex-[2] rounded-xl px-3 py-2.5 text-sm font-semibold text-center no-underline",
+              c.texted
+                ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
+                : "bg-green-500/15 text-green-600 dark:text-green-500"
+            )}>
+            {c.texted ? "✓ Texted" : "📱 Text Now"}
           </a>
           <a data-testid={`call-${c.id}`} href={`tel:${c.phone}`} title="Call"
-            style={{ flex: 1, background: `${th.blue}18`, color: th.blue, borderRadius: 12, padding: "10px", fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            className="flex-1 bg-blue-500/10 text-blue-500 rounded-xl px-3 py-2.5 text-sm no-underline flex items-center justify-center">
             📞
           </a>
           <button onClick={() => editContact(c)}
-            style={{ flex: 1, background: th.btnAltBg, color: th.textMuted, border: "none", borderRadius: 12, padding: "10px", fontSize: 14, fontWeight: 500 }}>
+            className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-0 rounded-xl px-3 py-2.5 text-sm">
             Edit
           </button>
           <button onClick={() => markDone(c.id)}
-            style={{ flex: 1, background: "rgba(212,168,83,0.14)", color: "#d4a853", border: "none", borderRadius: 12, padding: "10px", fontSize: 13, fontWeight: 600 }}>
+            className="flex-1 bg-[#d4a853]/15 text-[#d4a853] border-0 rounded-xl px-3 py-2.5 text-xs font-semibold">
             Done ✓
           </button>
           <button onClick={() => deleteContact(c.id)}
-            style={{ background: `${th.red}18`, color: th.red, border: "none", borderRadius: 12, padding: "10px 12px", fontSize: 14 }}>
+            className="bg-red-500/10 text-red-500 border-0 rounded-xl px-3 py-2.5 text-sm">
             🗑
           </button>
         </div>
-        <div style={{ fontSize: 11, color: th.textDimmer, marginTop: 10, letterSpacing: "-0.1px" }}>
-          Added {formatDate(c.addedDate)} · Consent logged in-person
+        <div className="text-[11px] text-zinc-300 dark:text-zinc-600 mt-2.5">
+          Added {formatDate(c.addedDate)} · Consent: in-person
         </div>
       </div>
     );
@@ -553,29 +547,33 @@ export default function App() {
 
   const SettingsPanel = (
     <div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: th.text, marginBottom: 24, letterSpacing: "-0.4px" }}>Settings</div>
+      <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-6 tracking-tight">Settings</div>
 
       {/* Profiles */}
-      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Profiles</div>
-      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 8 }) }}>
+      <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-2">Profiles</div>
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden mb-2">
         {profiles.map((p, idx) => (
           <div key={p.id} data-testid={`profile-row-${p.id}`}>
-            {idx > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 16, fontWeight: p.id === activeProfileId ? 600 : 400, color: th.text }}>{p.name || "(no name)"}</div>
-                {p.store && <div style={{ fontSize: 13, color: th.textMuted }}>{p.store}</div>}
+            {idx > 0 && <div className="h-px bg-zinc-100 dark:bg-zinc-800 ml-4" />}
+            <div className="flex items-center gap-2.5 px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <div className={cn("text-base text-zinc-900 dark:text-zinc-100 truncate", p.id === activeProfileId ? "font-semibold" : "font-normal")}>
+                  {p.name || "(no name)"}
+                </div>
+                {p.store && <div className="text-sm text-zinc-500 dark:text-zinc-400">{p.store}</div>}
               </div>
               {p.id !== activeProfileId && (
                 <button data-testid={`switch-profile-${p.id}`} onClick={() => setActiveProfileId(p.id)}
-                  style={{ background: "rgba(212,168,83,0.18)", color: "#d4a853", border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 14, fontWeight: 600 }}>
+                  className="bg-[#d4a853]/20 text-[#d4a853] border-0 rounded-full px-3.5 py-1.5 text-sm font-semibold shrink-0">
                   Switch
                 </button>
               )}
-              {p.id === activeProfileId && <div style={{ fontSize: 13, color: "#d4a853", fontWeight: 600 }}>Active</div>}
+              {p.id === activeProfileId && (
+                <div className="text-sm text-[#d4a853] font-semibold shrink-0">Active</div>
+              )}
               {profiles.length > 1 && (
                 <button data-testid={`delete-profile-${p.id}`} onClick={() => deleteProfile(p.id)}
-                  style={{ background: "none", color: th.red, border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 14 }}>
+                  className="text-red-500 text-sm border-0 bg-transparent px-2 py-1 shrink-0">
                   ✕
                 </button>
               )}
@@ -584,187 +582,161 @@ export default function App() {
         ))}
       </div>
       <button data-testid="add-profile-btn" onClick={addProfile}
-        style={{ width: "100%", background: "none", color: "#d4a853", border: "none", borderRadius: 14, padding: "12px", fontSize: 16, fontWeight: 500, marginBottom: 24 }}>
+        className="w-full bg-transparent text-[#d4a853] border-0 rounded-xl py-3 text-base font-medium mb-6">
         + Add Profile
       </button>
 
       {/* My Info */}
-      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>My Info</div>
-      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 24 }) }}>
+      <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-2">My Info</div>
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden mb-6">
         {[["name","Name"],["title","Title"],["store","Store"],["phone","Phone"],["email","Email"]].map(([k, label], i) => (
           <div key={k}>
-            {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
-            <div style={{ display: "flex", alignItems: "center", padding: "0 16px" }}>
-              <div style={{ fontSize: 16, color: th.text, width: 80, flexShrink: 0, paddingTop: 14, paddingBottom: 14 }}>{label}</div>
+            {i > 0 && <div className="h-px bg-zinc-100 dark:bg-zinc-800 ml-4" />}
+            <div className="flex items-center px-4">
+              <div className="text-base text-zinc-900 dark:text-zinc-100 w-20 shrink-0 py-3.5">{label}</div>
               <input data-testid={`myinfo-${k}`} value={myInfo[k] || ""}
                 onChange={e => updateActiveProfile(mi => ({ ...mi, [k]: e.target.value }))}
-                style={{ flex: 1, background: "none", border: "none", padding: "14px 0", color: th.textMuted, fontSize: 16, textAlign: "right", outline: "none" }} />
+                className="flex-1 bg-transparent border-0 outline-none py-3.5 text-zinc-500 dark:text-zinc-400 text-base text-right"
+                style={{ caretColor: "#d4a853" }} />
             </div>
           </div>
         ))}
       </div>
 
       {/* Appearance */}
-      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Appearance</div>
-      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 24, padding: "4px", display: "flex", gap: 4 }) }}>
+      <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-2">Appearance</div>
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 flex gap-1 mb-6">
         {["auto","light","dark"].map(mode => (
           <button key={mode} data-testid={`theme-${mode}`} onClick={() => setThemeMode(mode)}
-            style={{ flex: 1, background: themeMode === mode ? "#d4a853" : "none", color: themeMode === mode ? "#000000" : th.textMuted, border: "none", borderRadius: 10, padding: "9px 4px", fontSize: 14, fontWeight: themeMode === mode ? 700 : 400, textTransform: "capitalize" }}>
+            className={cn(
+              "flex-1 border-0 rounded-lg py-2.5 text-sm capitalize",
+              themeMode === mode
+                ? "bg-[#d4a853] text-zinc-950 font-bold"
+                : "bg-transparent text-zinc-500 dark:text-zinc-400 font-normal"
+            )}>
             {mode === "auto" ? "Auto" : mode === "light" ? "☀️ Light" : "🌙 Dark"}
           </button>
         ))}
       </div>
 
       {/* Categories */}
-      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Interest Categories</div>
-      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 8 }) }}>
+      <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-2">Interest Categories</div>
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden mb-2">
         {categories.map((cat, i) => (
           <div key={cat}>
-            {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
-            <div style={{ display: "flex", alignItems: "center", padding: "12px 16px" }}>
-              <div style={{ flex: 1, fontSize: 16, color: th.text }}>{cat}</div>
-              <button data-testid={`delete-category-${cat}`} onClick={() => setCategories(cs => cs.filter(c => c !== cat))}
-                style={{ background: "none", color: th.red, border: "none", fontSize: 14, padding: "0 0 0 12px" }}>
+            {i > 0 && <div className="h-px bg-zinc-100 dark:bg-zinc-800 ml-4" />}
+            <div className="flex items-center px-4 py-3">
+              <div className="flex-1 text-base text-zinc-900 dark:text-zinc-100">{cat}</div>
+              <button data-testid={`delete-category-${cat}`}
+                onClick={() => setCategories(cs => cs.filter(c => c !== cat))}
+                className="text-red-500 text-sm border-0 bg-transparent pl-3">
                 Remove
               </button>
             </div>
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+      <div className="flex gap-2 mb-6">
         <input data-testid="new-category-input" value={newCategory}
           onChange={e => setNewCategory(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && newCategory.trim()) { setCategories(cs => [...cs, newCategory.trim()]); setNewCategory(""); } }}
           placeholder="Add a category…"
-          style={{ flex: 1, background: th.surface, border: `0.5px solid ${th.border}`, borderRadius: 12, padding: "12px 14px", color: th.text, fontSize: 16, outline: "none" }} />
+          className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-base text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500" />
         <button data-testid="add-category-btn"
           onClick={() => { if (newCategory.trim()) { setCategories(cs => [...cs, newCategory.trim()]); setNewCategory(""); } }}
-          style={{ background: "#d4a853", color: "#000000", border: "none", borderRadius: 12, padding: "12px 18px", fontSize: 16, fontWeight: 600 }}>
+          className="bg-[#d4a853] text-zinc-950 border-0 rounded-xl px-4 py-3 text-base font-semibold">
           Add
         </button>
       </div>
 
       {/* Message Template */}
-      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Text Message Template</div>
-      <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 12 }) }}>
+      <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-2">Text Message Template</div>
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden mb-3">
         <textarea data-testid="template-textarea" value={msgTemplate}
           onChange={e => setMsgTemplate(e.target.value)} rows={4}
-          style={{ width: "100%", background: "none", border: "none", padding: "14px 16px", color: th.text, fontSize: 15, resize: "none", lineHeight: 1.6, outline: "none" }} />
+          className="w-full bg-transparent border-0 outline-none px-4 py-3.5 text-base text-zinc-900 dark:text-zinc-100 resize-none leading-relaxed" />
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+      <div className="flex flex-wrap gap-1.5 mb-3">
         {[["{name}","customer name"],["{myName}","your name"],["{store}","store name"],["{phone}","your phone"],["{title}","your title"]].map(([v, hint]) => (
           <button key={v} onClick={() => setMsgTemplate(prev => prev + v)} title={hint}
-            style={{ background: th.btnAltBg, color: "#d4a853", border: "none", borderRadius: 20, padding: "6px 12px", fontSize: 13, fontWeight: 500 }}>
+            className="bg-zinc-100 dark:bg-zinc-800 text-[#d4a853] border-0 rounded-full px-3 py-1.5 text-sm font-medium">
             {v}
           </button>
         ))}
       </div>
-      <div style={{ ...glass({ borderRadius: 18, padding: "14px 16px", marginBottom: 8 }) }}>
-        <div style={{ fontSize: 11, color: th.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>Preview — sent to "{previewName}"</div>
-        <div style={{ fontSize: 14, color: th.textMuted, lineHeight: 1.6 }}>{msgPreview}</div>
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 mb-2">
+        <div className="text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Preview — sent to "{previewName}"</div>
+        <div className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">{msgPreview}</div>
       </div>
       <button onClick={() => { setMsgTemplate(DEFAULT_TEMPLATE); showToast("Template reset"); }}
-        style={{ background: "none", border: "none", color: th.textMuted, fontSize: 14, padding: "0 4px 24px", textDecoration: "underline" }}>
+        className="bg-transparent border-0 text-zinc-400 dark:text-zinc-500 text-sm underline px-1 pb-6">
         Reset to default
       </button>
 
       {/* Backup */}
-      <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Backup & Restore</div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+      <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-2">Backup & Restore</div>
+      <div className="flex gap-2.5 mb-2">
         <button onClick={exportData}
-          style={{ flex: 1, background: `${th.green}18`, color: th.green, border: "none", borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 600 }}>
+          className="flex-1 bg-green-500/10 text-green-600 dark:text-green-400 border-0 rounded-xl py-3.5 text-sm font-semibold">
           ⬇️ Export Backup
         </button>
-        <label style={{ flex: 1, background: `${th.blue}18`, color: th.blue, border: "none", borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 600, textAlign: "center", cursor: "pointer" }}>
+        <label className="flex-1 bg-blue-500/10 text-blue-500 rounded-xl py-3.5 text-sm font-semibold text-center cursor-pointer">
           ⬆️ Restore
-          <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
+          <input type="file" accept=".json" onChange={importData} className="hidden" />
         </label>
       </div>
-      <div style={{ fontSize: 12, color: th.textDimmer, marginBottom: 28, lineHeight: 1.5, paddingLeft: 4 }}>
+      <div className="text-xs text-zinc-400 dark:text-zinc-500 mb-7 leading-relaxed px-1">
         All data stored locally on your device only. Never shared.
       </div>
 
       <button onClick={() => setShowMyInfo(false)}
-        style={{ width: "100%", background: "#d4a853", color: "#000000", border: "none", borderRadius: 14, padding: "16px", fontSize: 17, fontWeight: 600, letterSpacing: "-0.2px" }}>
+        className="w-full bg-[#d4a853] text-zinc-950 border-0 rounded-xl py-4 text-[17px] font-semibold tracking-tight">
         Done
       </button>
     </div>
   );
 
-  // ─── Render ────────────────────────────────────────────────────────────────
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div data-testid="app-root" data-theme={effectiveTheme}
-      style={{
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif",
-        background: "transparent",
-        color: th.text,
-        minHeight: "100dvh",
-        display: isDesktop ? "flex" : "block",
-        maxWidth: isDesktop ? "none" : 480,
-        margin: isDesktop ? 0 : "0 auto",
-        paddingTop: isDesktop ? 0 : "env(safe-area-inset-top)",
-        position: "relative",
-      }}>
-
-      {/* Fixed gradient background — glass elements float above this */}
-      <div style={{ position: "fixed", inset: 0, background: th.appBg, zIndex: -1 }} />
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap');
-        *, *::before, *::after { box-sizing: border-box; }
-        html {
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
-          overscroll-behavior-y: contain;
-          -webkit-tap-highlight-color: transparent;
-          min-height: 100dvh;
-        }
-        body {
-          min-height: 100dvh;
-          overscroll-behavior-y: contain;
-        }
-        input, select, textarea { font-family: inherit; }
-        button { cursor: pointer; font-family: inherit; touch-action: manipulation; }
-        a { font-family: inherit; touch-action: manipulation; }
-        input, select, textarea, button { -webkit-appearance: none; appearance: none; }
-        select { background-image: none; }
-        ::-webkit-scrollbar { display: none; }
-        * { scrollbar-width: none; -ms-overflow-style: none; }
-        .contact-grid {
-          display: grid;
-          grid-template-columns: ${isWide ? "repeat(2, 1fr)" : "1fr"};
-          gap: ${isWide ? "0 16px" : "0"};
-        }
-        ::placeholder { color: ${th.textDim}; }
-      `}</style>
+      className="min-h-dvh bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
 
       {/* ── Toast ─────────────────────────────────────────────────────────── */}
       {toast && (
-        <div style={{ position: "fixed", top: "max(calc(env(safe-area-inset-top) + 14px), 20px)", left: "50%", transform: "translateX(-50%)", ...glass({ borderRadius: 20, padding: "12px 22px", zIndex: 9999, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", maxWidth: "calc(100vw - 40px)", textAlign: "center", color: toast.type === "error" ? th.red : th.green }) }}>
+        <div
+          className={cn(
+            "fixed left-1/2 -translate-x-1/2 z-[9999]",
+            "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl",
+            "px-5 py-3 text-sm font-semibold whitespace-nowrap shadow-lg max-w-[calc(100vw-40px)] text-center",
+            toast.type === "error" ? "text-red-500" : "text-green-600 dark:text-green-400"
+          )}
+          style={{ top: "max(calc(env(safe-area-inset-top) + 14px), 20px)" }}>
           {toast.msg}
         </div>
       )}
 
-      {/* ── QR Modal ──────────────────────────────────────────────────────── */}
+      {/* ── vCard QR Modal ────────────────────────────────────────────────── */}
       {showQR && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[300] flex items-center justify-center p-6"
           onClick={() => setShowQR(false)}>
           <div data-testid="qr-modal"
-            style={{ ...glass({ borderRadius: 28, padding: 28, textAlign: "center", maxWidth: 340, width: "100%" }) }}
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-3xl p-7 text-center max-w-[340px] w-full shadow-2xl"
             onClick={e => e.stopPropagation()}>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#d4a853", marginBottom: 4, letterSpacing: "-0.3px" }}>Scan to Add Contact</div>
-            <div style={{ fontSize: 13, color: th.textMuted, marginBottom: 20 }}>
+            <div className="text-[22px] text-[#d4a853] mb-1 tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+              Scan to Add Contact
+            </div>
+            <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-5">
               {myInfo.name || "Your contact"}{myInfo.store ? ` · ${myInfo.store}` : ""}
             </div>
             {qrDataUrl && (
               <img data-testid="qr-image" src={qrDataUrl} alt="Contact QR code"
-                style={{ width: 252, height: 252, borderRadius: 16, display: "block", margin: "0 auto 20px" }} />
+                className="w-[252px] h-[252px] rounded-2xl mx-auto mb-5 block" />
             )}
-            <div style={{ fontSize: 12, color: th.textDim, marginBottom: 20, lineHeight: 1.5 }}>
+            <div className="text-xs text-zinc-400 dark:text-zinc-500 mb-5 leading-relaxed">
               Customer scans with their camera to save your contact info.
             </div>
             <button onClick={() => setShowQR(false)}
-              style={{ width: "100%", background: "#d4a853", color: "#000000", border: "none", borderRadius: 14, padding: "14px", fontSize: 16, fontWeight: 600, boxShadow: "0 2px 12px rgba(212,168,83,0.4), inset 0 1px 0 rgba(255,255,255,0.25)" }}>
+              className="w-full bg-[#d4a853] text-zinc-950 border-0 rounded-xl py-3.5 text-base font-semibold">
               Done
             </button>
           </div>
@@ -773,26 +745,23 @@ export default function App() {
 
       {/* ── Settings Modal ────────────────────────────────────────────────── */}
       {showMyInfo && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center" }}
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-[200] flex items-end md:items-center justify-center"
           onClick={() => setShowMyInfo(false)}>
-          <div style={{
-            ...glass({
-              width: "100%",
-              maxWidth: isDesktop ? 560 : 480,
-              borderRadius: isDesktop ? 28 : "28px 28px 0 0",
-              padding: "0 20px 0",
-              paddingBottom: isDesktop ? 0 : "calc(env(safe-area-inset-bottom))",
-              maxHeight: isDesktop ? "90dvh" : "92dvh",
-              overflowY: "auto",
-              margin: isDesktop ? "0 16px" : "0 auto",
-            })
-          }} onClick={e => e.stopPropagation()}>
+          <div
+            className={cn(
+              "bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 w-full overflow-y-auto shadow-2xl",
+              isDesktop
+                ? "max-w-[560px] rounded-3xl mx-4 max-h-[90dvh]"
+                : "rounded-t-3xl max-h-[92dvh] max-w-[480px]"
+            )}
+            style={{ paddingBottom: isDesktop ? 0 : "env(safe-area-inset-bottom)" }}
+            onClick={e => e.stopPropagation()}>
             {!isDesktop && (
-              <div style={{ display: "flex", justifyContent: "center", paddingTop: 12, paddingBottom: 6 }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: th.border }} />
+              <div className="flex justify-center pt-3 pb-1.5">
+                <div className="w-9 h-1 bg-zinc-300 dark:bg-zinc-600 rounded-full" />
               </div>
             )}
-            <div style={{ padding: isDesktop ? "24px 0" : "8px 0 28px" }}>
+            <div className={isDesktop ? "p-6" : "px-5 pt-2 pb-7"}>
               {SettingsPanel}
             </div>
           </div>
@@ -803,420 +772,779 @@ export default function App() {
           DESKTOP LAYOUT
       ══════════════════════════════════════════════════════════════════ */}
       {isDesktop && (
-        <aside style={{
-          width: 260,
-          minWidth: 260,
-          height: "100vh",
-          position: "sticky",
-          top: 0,
-          overflowY: "auto",
-          background: th.surface,
-          backdropFilter: th.blur,
-          WebkitBackdropFilter: th.blur,
-          borderRight: `1px solid ${th.border}`,
-          display: "flex",
-          flexDirection: "column",
-          padding: "28px 16px 24px",
-        }}>
-          {/* Logo + profile */}
-          <div style={{ marginBottom: 28 }}>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, color: "#d4a853", lineHeight: 1, letterSpacing: "-0.5px" }}>Follow-Up</div>
-            <div style={{ fontSize: 13, color: th.textMuted, marginTop: 6, lineHeight: 1.5 }}>
-              {myInfo.name && <span style={{ fontWeight: 600, color: th.text }}>{myInfo.name} · </span>}
-              {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 24 }}>
-            {[
-              { icon: "👥", label: "Contacts",       active: view === "dashboard", action: () => navTo("dashboard") },
-              { icon: "＋", label: "Add Contact",     active: view === "add",       action: () => navTo("add") },
-              { icon: "🔳", label: "Get Number (QR)", active: view === "qr",        action: () => navTo("qr") },
-              { icon: "🔔", label: `Follow-ups${overdue > 0 ? ` (${overdue})` : ""}`, active: false, action: () => { setFilter("overdue"); setView("dashboard"); }, urgent: overdue > 0 },
-              { icon: "🔍", label: "Lookup",          active: view === "lookup",    action: () => navTo("lookup") },
-            ].map(item => (
-              <button key={item.label} onClick={item.action}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, border: "none", background: item.active ? "rgba(212,168,83,0.15)" : "none", color: item.active ? "#d4a853" : item.urgent ? th.red : th.textMuted, fontSize: 15, fontWeight: item.active ? 600 : 400, textAlign: "left", width: "100%", letterSpacing: "-0.1px" }}>
-                <span style={{ fontSize: 19, width: 26, textAlign: "center" }}>{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          {/* Stats */}
-          <div style={{ fontSize: 11, color: th.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 }}>Overview</div>
-          <div style={{ ...glass({ borderRadius: 16, overflow: "hidden", marginBottom: 24 }) }}>
-            {stats.map((s, i) => (
-              <div key={s.f}>
-                {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 14 }} />}
-                <button onClick={() => { setFilter(filter === s.f ? "all" : s.f); setView("dashboard"); }}
-                  style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "none", background: filter === s.f ? s.color + "18" : "none" }}>
-                  <span style={{ fontSize: 14, color: filter === s.f ? s.color : th.textMuted }}>{s.label}</span>
-                  <span style={{ fontSize: 17, fontWeight: 700, color: s.color }}>{s.val}</span>
-                </button>
+        <div className="flex">
+          <aside className="w-[260px] min-w-[260px] h-screen sticky top-0 overflow-y-auto border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col py-7 px-4">
+            {/* Logo */}
+            <div className="mb-7">
+              <div className="text-[28px] text-[#d4a853] leading-none tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                Follow-Up
               </div>
-            ))}
-          </div>
-
-          {/* Actions */}
-          <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-            <button data-testid="qr-btn" onClick={openQR}
-              style={{ background: th.btnAltBg, color: th.textMuted, border: "none", borderRadius: 12, padding: "10px 14px", fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
-              ⬛ vCard QR
-            </button>
-            <button onClick={shareCard}
-              style={{ background: "rgba(212,168,83,0.15)", color: "#d4a853", border: "none", borderRadius: 12, padding: "10px 14px", fontSize: 14, fontWeight: 600 }}>
-              Share Card
-            </button>
-            <button data-testid="settings-btn" onClick={() => setShowMyInfo(true)}
-              style={{ background: th.btnAltBg, color: th.textMuted, border: "none", borderRadius: 12, padding: "10px 14px", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-              ⚙️ Settings
-            </button>
-          </div>
-        </aside>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════════
-          MAIN CONTENT AREA (both mobile + desktop)
-      ══════════════════════════════════════════════════════════════════ */}
-      <div style={{
-        flex: 1,
-        minWidth: 0,
-        height: isDesktop ? "100dvh" : "auto",
-        overflowY: isDesktop ? "auto" : "visible",
-        paddingBottom: isDesktop ? 0 : "calc(env(safe-area-inset-bottom) + 100px)",
-      }}>
-        {Banners}
-
-        {/* ── Mobile-only header ─────────────────────────────────────────── */}
-        {!isDesktop && (
-          <div style={{ ...glass({ borderBottom: `1px solid ${th.border}`, position: "sticky", top: 0, zIndex: 40 }), boxShadow: `${th.glassShadow}, ${th.glassHighlight}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px 10px" }}>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 30, color: "#d4a853", letterSpacing: "-0.5px", lineHeight: 1 }}>Follow-Up</div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <button data-testid="qr-btn" onClick={openQR}
-                  style={{ ...glass({ borderRadius: 20, padding: "7px 14px", fontSize: 13, fontWeight: 600, color: "#d4a853" }), boxShadow: "0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }}>
-                  Share Card
-                </button>
-                <button data-testid="settings-btn" onClick={() => setShowMyInfo(true)}
-                  style={{ ...glass({ borderRadius: 20, width: 36, height: 36, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", color: th.textMuted }), boxShadow: "0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }}>
-                  ⚙️
-                </button>
+              <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5 leading-snug">
+                {myInfo.name && <span className="font-semibold text-zinc-900 dark:text-zinc-100">{myInfo.name} · </span>}
+                {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, padding: "0 16px 14px", overflowX: "auto" }}>
-              {stats.map(s => (
-                <button key={s.f} onClick={() => setFilter(filter === s.f ? "all" : s.f)}
-                  style={{ flex: "0 0 auto", background: filter === s.f ? s.color + "28" : "rgba(255,255,255,0.08)", backdropFilter: th.blur, WebkitBackdropFilter: th.blur, border: `1px solid ${filter === s.f ? s.color + "60" : th.border}`, borderRadius: 20, padding: "7px 14px", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)" }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: s.color }}>{s.val}</span>
-                  <span style={{ fontSize: 12, color: filter === s.f ? s.color : th.textMuted, fontWeight: filter === s.f ? 600 : 400 }}>{s.label}</span>
+
+            {/* Nav */}
+            <nav className="flex flex-col gap-0.5 mb-6">
+              {[
+                { icon: "👥", label: "Contacts",          active: view === "dashboard", action: () => navTo("dashboard") },
+                { icon: "＋", label: "Add Contact",        active: view === "add",       action: () => navTo("add") },
+                { icon: "🔳", label: "Get Number (QR)",    active: view === "qr",        action: () => navTo("qr") },
+                { icon: "🔔", label: `Follow-ups${overdue > 0 ? ` (${overdue})` : ""}`, active: false, action: () => { setFilter("overdue"); setView("dashboard"); }, urgent: overdue > 0 },
+                { icon: "🔍", label: "Lookup",             active: view === "lookup",    action: () => navTo("lookup") },
+              ].map(item => (
+                <button key={item.label} onClick={item.action}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-0 text-[15px] text-left w-full",
+                    item.active
+                      ? "bg-[#d4a853]/15 text-[#d4a853] font-semibold"
+                      : item.urgent
+                        ? "bg-transparent text-red-500 font-normal"
+                        : "bg-transparent text-zinc-500 dark:text-zinc-400 font-normal"
+                  )}>
+                  <span className="text-[19px] w-6 text-center">{item.icon}</span>
+                  {item.label}
                 </button>
               ))}
-            </div>
-          </div>
-        )}
+            </nav>
 
-        {/* ── Desktop page header ────────────────────────────────────────── */}
-        {isDesktop && (
-          <div style={{ padding: "24px 28px 0", borderBottom: `1px solid ${th.border}`, paddingBottom: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#d4a853" }}>
-                {view === "dashboard" ? "Contacts" : view === "add" ? (editId ? "Edit Contact" : "New Contact") : view === "qr" ? "Get Customer Number" : "Furniture Lookup"}
+            {/* Stats */}
+            <div className="text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Overview</div>
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden mb-6">
+              {STAT_META.map((s, i) => (
+                <div key={s.f}>
+                  {i > 0 && <div className="h-px bg-zinc-100 dark:bg-zinc-800 ml-3.5" />}
+                  <button onClick={() => { setFilter(filter === s.f ? "all" : s.f); setView("dashboard"); }}
+                    className={cn(
+                      "w-full flex justify-between items-center px-3.5 py-2.5 border-0",
+                      filter === s.f ? "bg-zinc-50 dark:bg-zinc-800/50" : "bg-transparent"
+                    )}>
+                    <span className={cn("text-sm", filter === s.f ? s.valCls : "text-zinc-500 dark:text-zinc-400")}>{s.label}</span>
+                    <span className={cn("text-[17px] font-bold", s.valCls)}>{s.val}</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div className="mt-auto flex flex-col gap-2">
+              <button data-testid="qr-btn" onClick={openQR}
+                className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-0 rounded-xl px-3.5 py-2.5 text-sm font-medium flex items-center gap-2">
+                ⬛ vCard QR
+              </button>
+              <button onClick={shareCard}
+                className="bg-[#d4a853]/15 text-[#d4a853] border-0 rounded-xl px-3.5 py-2.5 text-sm font-semibold">
+                Share Card
+              </button>
+              <button data-testid="settings-btn" onClick={() => setShowMyInfo(true)}
+                className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-0 rounded-xl px-3.5 py-2.5 text-sm flex items-center gap-2">
+                ⚙️ Settings
+              </button>
+            </div>
+          </aside>
+
+          {/* Desktop main */}
+          <div className="flex-1 min-w-0 h-dvh overflow-y-auto">
+            {Banners}
+
+            {/* Desktop page header */}
+            <div className="px-7 pt-6 pb-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center gap-4">
+              <div className="text-2xl text-[#d4a853] tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                {view === "dashboard" ? "Contacts"
+                  : view === "add" ? (editId ? "Edit Contact" : "New Contact")
+                  : view === "qr" ? "Customer Interest Card"
+                  : "Furniture Lookup"}
               </div>
               {view === "dashboard" && (
                 <input value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Search by name or phone…"
-                  style={{ flex: 1, maxWidth: 360, background: th.inputBg, border: `1px solid ${th.border}`, borderRadius: 10, padding: "9px 14px", color: th.text, fontSize: 14 }} />
+                  className="flex-1 max-w-[360px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500" />
               )}
             </div>
             {view === "dashboard" && filter !== "all" && (
-              <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: th.textMuted }}>Filtered: <span style={{ color: "#d4a853" }}>{filter.replace("_", " ")}</span></span>
-                <button onClick={() => setFilter("all")} style={{ background: "none", border: "none", color: th.textMuted, fontSize: 12, padding: 0 }}>Clear ×</button>
+              <div className="px-7 py-2 flex items-center gap-2">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Filtered: <span className="text-[#d4a853]">{filter.replace("_", " ")}</span>
+                </span>
+                <button onClick={() => setFilter("all")}
+                  className="bg-transparent border-0 text-zinc-400 dark:text-zinc-500 text-xs">
+                  Clear ×
+                </button>
               </div>
             )}
-          </div>
-        )}
 
-        {/* ── Dashboard view ─────────────────────────────────────────────── */}
-        {view === "dashboard" && (
-          <div style={{ padding: isDesktop ? "20px 28px" : "16px 16px 0" }}>
-            {!isDesktop && (
-              <>
-                <input value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Search by name or phone..."
-                  style={{ width: "100%", background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, padding: "11px 14px", color: th.text, fontSize: 14, marginBottom: 12 }} />
-                {filter !== "all" && (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                    <div style={{ fontSize: 12, color: th.textMuted }}>Filtered: <span style={{ color: "#d4a853" }}>{filter.replace("_", " ")}</span></div>
-                    <button onClick={() => setFilter("all")} style={{ background: "none", border: "none", color: th.textMuted, fontSize: 12 }}>Clear ×</button>
+            {/* Desktop view content */}
+            {view === "dashboard" && (
+              <div className="p-7">
+                {filtered.length === 0 && (
+                  <div className="text-center text-zinc-400 dark:text-zinc-500 mt-16">
+                    <div className="text-5xl mb-3">🛋️</div>
+                    <div className="text-base font-medium text-zinc-500 dark:text-zinc-400">No contacts yet</div>
+                    <div className="text-sm mt-1">Add your first customer</div>
                   </div>
                 )}
-              </>
-            )}
-
-            {filtered.length === 0 && (
-              <div style={{ textAlign: "center", color: th.textDim, marginTop: 60 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>🛋️</div>
-                <div style={{ fontSize: 16, fontWeight: 500 }}>No contacts yet</div>
-                <div style={{ fontSize: 13, marginTop: 4 }}>Add your first customer below</div>
-              </div>
-            )}
-
-            <div className="contact-grid">
-              {filtered.map(c => ContactCard(c))}
-            </div>
-
-            {contacts.filter(c => c.done).length > 0 && (
-              <div style={{ textAlign: "center", marginTop: 12, marginBottom: 8 }}>
-                <button onClick={() => setFilter("done")}
-                  style={{ background: "none", border: "none", color: th.textDimmer, fontSize: 12 }}>
-                  View {contacts.filter(c => c.done).length} completed →
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Add / Edit view ────────────────────────────────────────────── */}
-        {view === "add" && (
-          <div style={{ padding: isDesktop ? "24px 28px" : "16px 16px", maxWidth: isDesktop ? 560 : "none" }}>
-            {!isDesktop && (
-              <div style={{ fontSize: 28, fontWeight: 700, color: th.text, marginBottom: 20, letterSpacing: "-0.5px" }}>
-                {editId ? "Edit Contact" : "New Customer"}
-              </div>
-            )}
-
-            {/* Grouped input card */}
-            <div style={{ ...glass({ borderRadius: 18, overflow: "hidden", marginBottom: 16 }) }}>
-              {[["name","Customer Name","text","Full name"],["phone","Phone Number","tel","Mobile number"]].map(([k, label, type, placeholder], i) => (
-                <div key={k}>
-                  {i > 0 && <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />}
-                  <div style={{ display: "flex", alignItems: "center", padding: "0 16px" }}>
-                    <div style={{ fontSize: 16, color: th.textMuted, width: 110, flexShrink: 0, paddingTop: 14, paddingBottom: 14 }}>{label}</div>
-                    <input data-testid={`input-${k}`} type={type} value={form[k]} placeholder={placeholder}
-                      onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
-                      style={{ flex: 1, background: "none", border: "none", padding: "14px 0", color: th.text, fontSize: 16, textAlign: "right", outline: "none" }} />
-                  </div>
+                <div style={{ display: "grid", gridTemplateColumns: isWide ? "repeat(2, 1fr)" : "1fr", gap: isWide ? "0 16px" : "0" }}>
+                  {filtered.map(c => ContactCard(c))}
                 </div>
-              ))}
-              <div style={{ height: "0.5px", background: th.border, marginLeft: 16 }} />
-              <div style={{ display: "flex", alignItems: "center", padding: "0 16px" }}>
-                <div style={{ fontSize: 16, color: th.textMuted, width: 110, flexShrink: 0, paddingTop: 14, paddingBottom: 14 }}>Interested In</div>
-                <select data-testid="select-interest" value={form.interest}
-                  onChange={e => setForm(f => ({ ...f, interest: e.target.value }))}
-                  style={{ flex: 1, background: "none", border: "none", padding: "14px 0", color: form.interest ? th.text : th.textMuted, fontSize: 16, textAlign: "right", outline: "none" }}>
-                  <option value="">Select…</option>
-                  {categories.map(i => <option key={i} value={i}>{i}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div style={{ ...glass({ borderRadius: 18, marginBottom: 16, overflow: "hidden" }) }}>
-              <textarea data-testid="textarea-notes" value={form.notes}
-                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
-                placeholder="Budget, style preference, timeline…"
-                style={{ width: "100%", background: "none", border: "none", padding: "14px 16px", color: th.text, fontSize: 16, resize: "none", outline: "none", lineHeight: 1.5 }} />
-            </div>
-
-            {/* Follow-up interval */}
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.6, paddingLeft: 4 }}>Follow Up In</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                {FOLLOW_UP_INTERVALS.map(i => (
-                  <button key={i.days} onClick={() => setForm(f => ({ ...f, followUpDays: i.days }))}
-                    style={{ flex: 1, ...(form.followUpDays === i.days ? { background: "#d4a853", color: "#000", border: "none", boxShadow: "0 2px 12px rgba(212,168,83,0.4), inset 0 1px 0 rgba(255,255,255,0.3)" } : glass({ color: th.textMuted })), borderRadius: 14, padding: "10px 4px", fontSize: 13, fontWeight: form.followUpDays === i.days ? 700 : 400 }}>
-                    {i.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ background: `${th.green}14`, borderRadius: 12, padding: "10px 14px", marginBottom: 24, marginTop: 16, fontSize: 13, color: th.green, lineHeight: 1.5 }}>
-              🔒 In-person verbal consent logged · {new Date().toLocaleDateString()}
-            </div>
-
-            <button onClick={saveContact}
-              style={{ width: "100%", background: "#d4a853", color: "#000000", border: "none", borderRadius: 14, padding: "16px", fontSize: 17, fontWeight: 600, marginBottom: 12, letterSpacing: "-0.2px" }}>
-              {editId ? "Save Changes" : "Add Customer"}
-            </button>
-            <button onClick={() => { setView("dashboard"); setEditId(null); setForm({ name: "", phone: "", interest: "", notes: "", followUpDays: 7 }); }}
-              style={{ width: "100%", background: "none", color: th.textMuted, border: "none", borderRadius: 14, padding: "14px", fontSize: 17 }}>
-              Cancel
-            </button>
-          </div>
-        )}
-
-        {/* ── Lookup view ────────────────────────────────────────────────── */}
-        {view === "lookup" && (
-          <div style={{ padding: isDesktop ? "24px 28px" : "20px", maxWidth: isDesktop ? 680 : "none" }}>
-            {!isDesktop && (
-              <>
-                <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#d4a853", marginBottom: 6 }}>Furniture Lookup</div>
-                <div style={{ fontSize: 13, color: th.textDim, marginBottom: 20 }}>Ask anything about furniture — specs, styles, materials, care tips.</div>
-              </>
-            )}
-            {isDesktop && (
-              <div style={{ fontSize: 13, color: th.textDim, marginBottom: 20 }}>Ask anything about furniture — specs, styles, materials, care tips.</div>
-            )}
-
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              <input ref={lookupInputRef} value={lookupQuery}
-                onChange={e => setLookupQuery(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && runLookup()}
-                placeholder="e.g. What's eight-way hand-tied?"
-                style={{ flex: 1, ...glass({ borderRadius: 16, padding: "13px 16px", color: th.text, fontSize: 15, outline: "none" }) }} />
-              <button onClick={() => runLookup()} disabled={lookupLoading || !lookupQuery.trim()}
-                style={{ ...(lookupLoading || !lookupQuery.trim() ? glass({ color: th.textDim }) : { background: "#d4a853", color: "#000", border: "none", boxShadow: "0 2px 12px rgba(212,168,83,0.4)" }), borderRadius: 16, padding: "0 22px", fontSize: 20, fontWeight: 700 }}>
-                {lookupLoading ? "…" : "→"}
-              </button>
-            </div>
-
-            {!lookupAnswer && !lookupLoading && (
-              <div>
-                <div style={{ fontSize: 11, color: th.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Try asking</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {[
-                    "What's the difference between memory foam and hybrid?",
-                    "How to clean microfiber sofa?",
-                    "What size rug for a 12x14 living room?",
-                    "Solid wood vs engineered wood pros and cons",
-                    "What's a good sofa frame to look for?",
-                  ].map(q => (
-                    <button key={q} onClick={() => { setLookupQuery(q); runLookup(q); }}
-                      style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 20, padding: "6px 12px", color: th.btnAltText, fontSize: 12, cursor: "pointer", textAlign: "left" }}>
-                      {q}
+                {contacts.filter(c => c.done).length > 0 && (
+                  <div className="text-center mt-3">
+                    <button onClick={() => setFilter("done")}
+                      className="bg-transparent border-0 text-zinc-400 dark:text-zinc-500 text-xs">
+                      View {contacts.filter(c => c.done).length} completed →
                     </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {view === "add" && (
+              <div className="p-7 max-w-[560px]">
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden mb-4">
+                  {[["name","Customer Name","text","Full name"],["phone","Phone Number","tel","Mobile number"]].map(([k, label, type, placeholder], i) => (
+                    <div key={k}>
+                      {i > 0 && <div className="h-px bg-zinc-100 dark:bg-zinc-800 ml-4" />}
+                      <div className="flex items-center px-4">
+                        <div className="text-base text-zinc-500 dark:text-zinc-400 w-[110px] shrink-0 py-3.5">{label}</div>
+                        <input data-testid={`input-${k}`} type={type} value={form[k]} placeholder={placeholder}
+                          onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
+                          className="flex-1 bg-transparent border-0 outline-none py-3.5 text-zinc-900 dark:text-zinc-100 text-base text-right placeholder:text-zinc-400 dark:placeholder:text-zinc-500" />
+                      </div>
+                    </div>
                   ))}
+                  <div className="h-px bg-zinc-100 dark:bg-zinc-800 ml-4" />
+                  <div className="flex items-center px-4">
+                    <div className="text-base text-zinc-500 dark:text-zinc-400 w-[110px] shrink-0 py-3.5">Interested In</div>
+                    <select data-testid="select-interest" value={form.interest}
+                      onChange={e => setForm(f => ({ ...f, interest: e.target.value }))}
+                      className="flex-1 bg-transparent border-0 outline-none py-3.5 text-zinc-900 dark:text-zinc-100 text-base text-right">
+                      <option value="">Select…</option>
+                      {categories.map(i => <option key={i} value={i}>{i}</option>)}
+                    </select>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {lookupLoading && (
-              <div style={{ textAlign: "center", color: th.textDim, marginTop: 40 }}>
-                <div style={{ fontSize: 30, marginBottom: 8 }}>✨</div>
-                <div style={{ fontSize: 14 }}>Looking that up…</div>
-              </div>
-            )}
-
-            {lookupAnswer && (
-              <div style={{ ...glass({ borderRadius: 20, padding: "16px 18px", marginTop: 4 }) }}>
-                <div style={{ fontSize: 11, color: th.textDim, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Answer</div>
-                <div style={{ fontSize: 14, color: th.text, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{lookupAnswer}</div>
-                <button onClick={() => { setLookupAnswer(null); setLookupQuery(""); lookupInputRef.current?.focus(); }}
-                  style={{ marginTop: 14, background: "none", border: `1px solid ${th.border}`, borderRadius: 8, padding: "7px 16px", color: th.textMuted, fontSize: 12, cursor: "pointer" }}>
-                  Ask another
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden mb-4">
+                  <textarea data-testid="textarea-notes" value={form.notes}
+                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
+                    placeholder="Budget, style preference, timeline…"
+                    className="w-full bg-transparent border-0 outline-none px-4 py-3.5 text-zinc-900 dark:text-zinc-100 text-base resize-none leading-relaxed placeholder:text-zinc-400 dark:placeholder:text-zinc-500" />
+                </div>
+                <div className="mb-2">
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2.5 px-1">Follow Up In</div>
+                  <div className="flex gap-2">
+                    {FOLLOW_UP_INTERVALS.map(i => (
+                      <button key={i.days} onClick={() => setForm(f => ({ ...f, followUpDays: i.days }))}
+                        className={cn(
+                          "flex-1 border-0 rounded-xl py-2.5 text-sm",
+                          form.followUpDays === i.days
+                            ? "bg-[#d4a853] text-zinc-950 font-bold"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-normal"
+                        )}>
+                        {i.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-green-500/10 rounded-xl px-3.5 py-2.5 my-4 text-sm text-green-600 dark:text-green-400 leading-relaxed">
+                  🔒 In-person verbal consent logged · {new Date().toLocaleDateString()}
+                </div>
+                <button onClick={saveContact}
+                  className="w-full bg-[#d4a853] text-zinc-950 border-0 rounded-xl py-4 text-[17px] font-semibold mb-3 tracking-tight">
+                  {editId ? "Save Changes" : "Add Customer"}
+                </button>
+                <button onClick={() => { setView("dashboard"); setEditId(null); setForm({ name: "", phone: "", interest: "", notes: "", followUpDays: 7 }); }}
+                  className="w-full bg-transparent text-zinc-500 dark:text-zinc-400 border-0 rounded-xl py-3.5 text-[17px]">
+                  Cancel
                 </button>
               </div>
             )}
-          </div>
-        )}
 
-        {/* ── Get Number QR view ─────────────────────────────────────────── */}
-        {view === "qr" && (
-          <div style={{ padding: isDesktop ? "24px 28px" : "16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {!isDesktop && (
-              <div style={{ textAlign: "center", marginBottom: 8, width: "100%" }}>
-                <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#d4a853" }}>Get Their Number</div>
-                <div style={{ fontSize: 13, color: th.textMuted, marginTop: 3 }}>Have your customer scan this with their camera</div>
+            {view === "lookup" && (
+              <div className="p-7 max-w-[680px]">
+                <div className="text-sm text-zinc-400 dark:text-zinc-500 mb-5">Ask anything about furniture — specs, styles, materials, care tips.</div>
+                <div className="flex gap-2 mb-3">
+                  <input ref={lookupInputRef} value={lookupQuery}
+                    onChange={e => setLookupQuery(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && runLookup()}
+                    placeholder="e.g. What's eight-way hand-tied?"
+                    className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-base text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500" />
+                  <button onClick={() => runLookup()} disabled={lookupLoading || !lookupQuery.trim()}
+                    className={cn(
+                      "border-0 rounded-xl px-5 text-xl font-bold",
+                      lookupLoading || !lookupQuery.trim()
+                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
+                        : "bg-[#d4a853] text-zinc-950"
+                    )}>
+                    {lookupLoading ? "…" : "→"}
+                  </button>
+                </div>
+                {!lookupAnswer && !lookupLoading && (
+                  <div>
+                    <div className="text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Try asking</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        "What's the difference between memory foam and hybrid?",
+                        "How to clean microfiber sofa?",
+                        "What size rug for a 12x14 living room?",
+                        "Solid wood vs engineered wood pros and cons",
+                        "What's a good sofa frame to look for?",
+                      ].map(q => (
+                        <button key={q} onClick={() => { setLookupQuery(q); runLookup(q); }}
+                          className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full px-3 py-1.5 text-zinc-500 dark:text-zinc-400 text-xs cursor-pointer text-left">
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {lookupLoading && (
+                  <div className="text-center text-zinc-400 dark:text-zinc-500 mt-10">
+                    <div className="text-3xl mb-2">✨</div>
+                    <div className="text-sm">Looking that up…</div>
+                  </div>
+                )}
+                {lookupAnswer && (
+                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mt-1">
+                    <div className="text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2.5">Answer</div>
+                    <div className="text-sm text-zinc-900 dark:text-zinc-100 leading-7 whitespace-pre-wrap">{lookupAnswer}</div>
+                    <button onClick={() => { setLookupAnswer(null); setLookupQuery(""); lookupInputRef.current?.focus(); }}
+                      className="mt-3.5 bg-transparent border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 py-1.5 text-zinc-500 dark:text-zinc-400 text-xs cursor-pointer">
+                      Ask another
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
-            {!myInfo.phone ? (
-              <div style={{ textAlign: "center", padding: "40px 20px" }}>
-                <div style={{ fontSize: 48, marginBottom: 14 }}>📵</div>
-                <div style={{ fontSize: 17, fontWeight: 600, color: th.text, marginBottom: 8 }}>Add your phone number first</div>
-                <div style={{ fontSize: 13, color: th.textMuted, marginBottom: 24, lineHeight: 1.5 }}>
-                  Customers need your number to text you. Add it in Settings.
-                </div>
-                <button onClick={() => setShowMyInfo(true)}
-                  style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 10, padding: "13px 28px", fontSize: 15, fontWeight: 600 }}>
-                  Open Settings
-                </button>
+            {view === "qr" && (
+              <div className="p-7 max-w-[560px]">
+                {!myInfo.phone ? (
+                  <div className="text-center py-10 px-5">
+                    <div className="text-5xl mb-3.5">📵</div>
+                    <div className="text-[17px] font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Add your phone number first</div>
+                    <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed">
+                      Customers need your number to text you. Add it in Settings.
+                    </div>
+                    <button onClick={() => setShowMyInfo(true)}
+                      className="bg-[#d4a853] text-zinc-950 border-0 rounded-xl px-7 py-3.5 text-[15px] font-semibold">
+                      Open Settings
+                    </button>
+                  </div>
+                ) : qrShowCode ? (
+                  /* ── Step 2: Show QR ── */
+                  <div className="flex flex-col items-center">
+                    <div className="text-center mb-4">
+                      <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                        {qrCustomerName ? `For ${qrCustomerName} — ` : ""}Scan to text, or photo for later
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-3xl p-5 shadow-xl mb-5">
+                      {smsQrUrl ? (
+                        <img src={smsQrUrl} alt="Scan to text me"
+                          className="w-[260px] h-[260px] block rounded-lg" />
+                      ) : (
+                        <div className="w-[260px] h-[260px] flex items-center justify-center text-zinc-400 text-sm">
+                          Generating…
+                        </div>
+                      )}
+                    </div>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 max-w-[320px] w-full mb-2">
+                      <div className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Message they'll send you</div>
+                      <div className="bg-green-500 rounded-[14px_14px_4px_14px] px-3.5 py-2.5 inline-block max-w-full">
+                        <div className="text-sm text-white leading-relaxed">{qrSmsBody}</div>
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center mb-5">Texts sent to {myInfo.phone}</div>
+                    <button onClick={() => setQrShowCode(false)}
+                      className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-0 rounded-xl px-7 py-3 text-base font-medium">
+                      ← Edit Info
+                    </button>
+                  </div>
+                ) : (
+                  /* ── Step 1: Form ── */
+                  <div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 px-1">Customer Name</div>
+                    <input
+                      value={qrCustomerName}
+                      onChange={e => setQrCustomerName(e.target.value)}
+                      placeholder="Their first name (optional)…"
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-base text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500 mb-4"
+                      style={{ caretColor: "#d4a853" }}
+                    />
+
+                    {qrItems.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {qrItems.map(item => (
+                          <span key={item}
+                            className="bg-[#d4a853] text-zinc-950 rounded-full px-3 py-1.5 text-sm font-medium flex items-center gap-1.5">
+                            {item}
+                            <button
+                              onClick={() => setQrItems(prev => prev.filter(i => i !== item))}
+                              className="text-zinc-950/60 border-0 bg-transparent p-0 leading-none text-xs font-bold">
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 px-1">What they're looking at</div>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {categories.map(cat => (
+                        <button key={cat}
+                          onClick={() => setQrItems(prev =>
+                            prev.includes(cat) ? prev.filter(i => i !== cat) : [...prev, cat]
+                          )}
+                          className={cn(
+                            "border rounded-full px-3 py-1.5 text-xs font-medium",
+                            qrItems.includes(cat)
+                              ? "bg-[#d4a853] text-zinc-950 border-[#d4a853]"
+                              : "bg-transparent text-zinc-500 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700"
+                          )}>
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2 mb-5">
+                      <input
+                        value={qrNewItem}
+                        onChange={e => setQrNewItem(e.target.value)}
+                        onKeyDown={e => {
+                          const v = qrNewItem.trim();
+                          if (e.key === "Enter" && v && !qrItems.includes(v)) { setQrItems(prev => [...prev, v]); setQrNewItem(""); }
+                        }}
+                        placeholder="Other item…"
+                        className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+                        style={{ caretColor: "#d4a853" }}
+                      />
+                      <button
+                        onClick={() => {
+                          const v = qrNewItem.trim();
+                          if (v && !qrItems.includes(v)) { setQrItems(prev => [...prev, v]); setQrNewItem(""); }
+                        }}
+                        disabled={!qrNewItem.trim()}
+                        className="bg-[#d4a853] text-zinc-950 border-0 rounded-xl px-4 text-sm font-semibold disabled:opacity-40">
+                        Add
+                      </button>
+                    </div>
+
+                    {(qrItems.length > 0 || qrCustomerName) && (
+                      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 mb-5">
+                        <div className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Message preview</div>
+                        <div className="bg-green-500 rounded-[14px_14px_4px_14px] px-3.5 py-2.5 inline-block max-w-full">
+                          <div className="text-sm text-white leading-relaxed">{qrSmsBody}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setQrShowCode(true)}
+                      className="w-full bg-[#d4a853] text-zinc-950 border-0 rounded-xl py-4 text-[17px] font-semibold tracking-tight">
+                      Show QR Code →
+                    </button>
+                  </div>
+                )}
               </div>
-            ) : (
-              <>
-                {/* QR code on white card — high contrast for easy scanning */}
-                <div style={{ background: "#ffffff", borderRadius: 24, padding: 20, margin: "12px 0 16px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
-                  {smsQrUrl ? (
-                    <img src={smsQrUrl} alt="Scan to text me"
-                      style={{ width: 260, height: 260, display: "block", borderRadius: 8 }} />
-                  ) : (
-                    <div style={{ width: 260, height: 260, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: 13 }}>
-                      Generating…
-                    </div>
-                  )}
-                </div>
-
-                {/* Step instructions */}
-                <div style={{ textAlign: "center", maxWidth: 300, marginBottom: 16 }}>
-                  <div style={{ fontSize: 17, fontWeight: 600, color: th.text, marginBottom: 6 }}>
-                    📷 Scan → tap Send
-                  </div>
-                  <div style={{ fontSize: 13, color: th.textMuted, lineHeight: 1.6 }}>
-                    Opens a pre-written text to {myInfo.name || "you"}.<br />
-                    Customer just hits <strong>Send</strong> — you get their number instantly.
-                  </div>
-                </div>
-
-                {/* Message preview bubble */}
-                <div style={{ ...glass({ borderRadius: 18, padding: "12px 16px", maxWidth: 320, width: "100%", marginBottom: 12 }) }}>
-                  <div style={{ fontSize: 10, color: th.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Message they'll send you</div>
-                  <div style={{ background: "#34c759", borderRadius: "14px 14px 4px 14px", padding: "10px 14px", display: "inline-block", maxWidth: "100%" }}>
-                    <div style={{ fontSize: 14, color: "#ffffff", lineHeight: 1.5 }}>
-                      Hi {myInfo.name || "there"}! Just visited {myInfo.store || "the store"} today — wanted to stay in touch 😊
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: 11, color: th.textDimmer, textAlign: "center" }}>
-                  Texts sent to {myInfo.phone}
-                </div>
-              </>
             )}
           </div>
-        )}
-      </div>
-
-      {/* ── Mobile floating Liquid Glass tab bar (iOS 26 style) ─────────── */}
-      {!isDesktop && (
-        <div style={{
-          position: "fixed",
-          bottom: "calc(env(safe-area-inset-bottom) + 14px)",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: th.tabBg,
-          backdropFilter: th.blur,
-          WebkitBackdropFilter: th.blur,
-          border: `1px solid ${th.border}`,
-          boxShadow: `${th.glassShadow}, ${th.glassHighlight}`,
-          borderRadius: 30,
-          display: "flex",
-          alignItems: "center",
-          padding: "10px 8px",
-          gap: 2,
-          zIndex: 50,
-          minWidth: 300,
-          maxWidth: "calc(100vw - 32px)",
-        }}>
-          {[
-            { icon: "👥", label: "Contacts", onClick: () => setView("dashboard"),                             active: view === "dashboard" },
-            { icon: "🔳", label: "Get #",    onClick: () => setView("qr"),                                    active: view === "qr" },
-            { icon: "＋", label: "Add",       onClick: () => navTo("add"),                                    active: view === "add" },
-            { icon: "🔔", label: overdue > 0 ? `${overdue}` : "Alerts", onClick: () => { setFilter("overdue"); setView("dashboard"); }, active: filter === "overdue" && view === "dashboard", urgent: overdue > 0 },
-            { icon: "🔍", label: "Lookup",   onClick: () => setView("lookup"),                                active: view === "lookup" },
-          ].map(tab => {
-            const isActive = tab.active;
-            return (
-              <button key={tab.label} onClick={tab.onClick} style={{ flex: 1, border: "none", background: isActive ? "rgba(212,168,83,0.22)" : "none", backdropFilter: isActive ? "blur(10px)" : "none", WebkitBackdropFilter: isActive ? "blur(10px)" : "none", borderRadius: 22, color: isActive ? "#d4a853" : tab.urgent ? th.red : th.textMuted, fontSize: 10, fontWeight: isActive ? 700 : 400, padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, boxShadow: isActive ? "inset 0 1px 0 rgba(255,255,255,0.18)" : "none", minWidth: 52 }}>
-                <div style={{ fontSize: 22, lineHeight: 1.15 }}>{tab.icon}</div>
-                <div style={{ letterSpacing: "-0.1px", fontSize: tab.urgent ? 11 : 10 }}>{tab.label}</div>
-              </button>
-            );
-          })}
         </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          MOBILE LAYOUT
+      ══════════════════════════════════════════════════════════════════ */}
+      {!isDesktop && (
+        <>
+          {/* Mobile header */}
+          <div className="sticky top-0 z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800"
+            style={{ paddingTop: "env(safe-area-inset-top)" }}>
+            <div className="flex justify-between items-center px-4 pt-3.5 pb-2.5">
+              <div>
+                <div className="text-[30px] text-[#d4a853] tracking-tight leading-none" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                  Follow-Up
+                </div>
+                {myInfo.name && (
+                  <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">{myInfo.name}</div>
+                )}
+              </div>
+              <div className="flex gap-2 items-center">
+                <button data-testid="qr-btn" onClick={shareCard}
+                  className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full px-3.5 py-1.5 text-sm font-semibold text-[#d4a853]">
+                  Share Card
+                </button>
+                <button data-testid="settings-btn" onClick={() => setShowMyInfo(true)}
+                  className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full w-9 h-9 text-base flex items-center justify-center text-zinc-500 dark:text-zinc-400">
+                  ⚙️
+                </button>
+              </div>
+            </div>
+            {/* Stats chips */}
+            <div className="flex gap-2 px-4 pb-3.5 overflow-x-auto">
+              {STAT_META.map(s => (
+                <button key={s.f} onClick={() => setFilter(filter === s.f ? "all" : s.f)}
+                  className={cn(
+                    "shrink-0 border rounded-full px-3.5 py-1.5 flex items-center gap-1.5",
+                    filter === s.f ? s.activeCls : s.inactiveCls
+                  )}>
+                  <div className="text-[15px] font-bold">{s.val}</div>
+                  <span className="text-xs font-medium">{s.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {Banners}
+
+          {/* Mobile content */}
+          <div style={{
+            paddingBottom: "calc(env(safe-area-inset-bottom) + 74px)",
+            maxWidth: 480,
+            margin: "0 auto",
+          }}>
+            {/* ── Dashboard ─────────────────────────────────────────── */}
+            {view === "dashboard" && (
+              <div className="px-4 pt-4">
+                <input value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Search by name or phone..."
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-base text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500 mb-3" />
+                {filter !== "all" && (
+                  <div className="flex justify-between items-center mb-2.5">
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Filtered: <span className="text-[#d4a853]">{filter.replace("_", " ")}</span>
+                    </div>
+                    <button onClick={() => setFilter("all")}
+                      className="bg-transparent border-0 text-zinc-400 dark:text-zinc-500 text-xs">
+                      Clear ×
+                    </button>
+                  </div>
+                )}
+                {filtered.length === 0 && (
+                  <div className="text-center text-zinc-400 dark:text-zinc-500 mt-16">
+                    <div className="text-5xl mb-3">🛋️</div>
+                    <div className="text-base font-medium text-zinc-500 dark:text-zinc-400">No contacts yet</div>
+                    <div className="text-sm mt-1">Add your first customer below</div>
+                  </div>
+                )}
+                {filtered.map(c => ContactCard(c))}
+                {contacts.filter(c => c.done).length > 0 && (
+                  <div className="text-center mt-3 mb-2">
+                    <button onClick={() => setFilter("done")}
+                      className="bg-transparent border-0 text-zinc-400 dark:text-zinc-500 text-xs">
+                      View {contacts.filter(c => c.done).length} completed →
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Add / Edit ─────────────────────────────────────────── */}
+            {view === "add" && (
+              <div className="px-4 py-4">
+                <div className="text-[28px] font-bold text-zinc-900 dark:text-zinc-100 mb-5 tracking-tight">
+                  {editId ? "Edit Contact" : "New Customer"}
+                </div>
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden mb-4">
+                  {[["name","Customer Name","text","Full name"],["phone","Phone Number","tel","Mobile number"]].map(([k, label, type, placeholder], i) => (
+                    <div key={k}>
+                      {i > 0 && <div className="h-px bg-zinc-100 dark:bg-zinc-800 ml-4" />}
+                      <div className="flex items-center px-4">
+                        <div className="text-base text-zinc-500 dark:text-zinc-400 w-[110px] shrink-0 py-3.5">{label}</div>
+                        <input data-testid={`input-${k}`} type={type} value={form[k]} placeholder={placeholder}
+                          onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
+                          className="flex-1 bg-transparent border-0 outline-none py-3.5 text-zinc-900 dark:text-zinc-100 text-base text-right placeholder:text-zinc-400 dark:placeholder:text-zinc-500" />
+                      </div>
+                    </div>
+                  ))}
+                  <div className="h-px bg-zinc-100 dark:bg-zinc-800 ml-4" />
+                  <div className="flex items-center px-4">
+                    <div className="text-base text-zinc-500 dark:text-zinc-400 w-[110px] shrink-0 py-3.5">Interested In</div>
+                    <select data-testid="select-interest" value={form.interest}
+                      onChange={e => setForm(f => ({ ...f, interest: e.target.value }))}
+                      className="flex-1 bg-transparent border-0 outline-none py-3.5 text-zinc-900 dark:text-zinc-100 text-base text-right">
+                      <option value="">Select…</option>
+                      {categories.map(i => <option key={i} value={i}>{i}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden mb-4">
+                  <textarea data-testid="textarea-notes" value={form.notes}
+                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
+                    placeholder="Budget, style preference, timeline…"
+                    className="w-full bg-transparent border-0 outline-none px-4 py-3.5 text-zinc-900 dark:text-zinc-100 text-base resize-none leading-relaxed placeholder:text-zinc-400 dark:placeholder:text-zinc-500" />
+                </div>
+
+                <div className="mb-2">
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2.5 px-1">Follow Up In</div>
+                  <div className="flex gap-2">
+                    {FOLLOW_UP_INTERVALS.map(i => (
+                      <button key={i.days} onClick={() => setForm(f => ({ ...f, followUpDays: i.days }))}
+                        className={cn(
+                          "flex-1 border-0 rounded-xl py-2.5 text-sm",
+                          form.followUpDays === i.days
+                            ? "bg-[#d4a853] text-zinc-950 font-bold"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-normal"
+                        )}>
+                        {i.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-green-500/10 rounded-xl px-3.5 py-2.5 my-4 text-sm text-green-600 dark:text-green-400 leading-relaxed">
+                  🔒 In-person verbal consent logged · {new Date().toLocaleDateString()}
+                </div>
+
+                <button onClick={saveContact}
+                  className="w-full bg-[#d4a853] text-zinc-950 border-0 rounded-xl py-4 text-[17px] font-semibold mb-3 tracking-tight">
+                  {editId ? "Save Changes" : "Add Customer"}
+                </button>
+                <button onClick={() => { setView("dashboard"); setEditId(null); setForm({ name: "", phone: "", interest: "", notes: "", followUpDays: 7 }); }}
+                  className="w-full bg-transparent text-zinc-500 dark:text-zinc-400 border-0 rounded-xl py-3.5 text-[17px]">
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* ── Lookup ────────────────────────────────────────────── */}
+            {view === "lookup" && (
+              <div className="px-4 py-5">
+                <div className="text-[22px] text-[#d4a853] mb-1.5" style={{ fontFamily: "'DM Serif Display', serif" }}>Furniture Lookup</div>
+                <div className="text-sm text-zinc-400 dark:text-zinc-500 mb-5">Ask anything about furniture — specs, styles, materials, care tips.</div>
+                <div className="flex gap-2 mb-3">
+                  <input ref={lookupInputRef} value={lookupQuery}
+                    onChange={e => setLookupQuery(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && runLookup()}
+                    placeholder="e.g. What's eight-way hand-tied?"
+                    className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-base text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500" />
+                  <button onClick={() => runLookup()} disabled={lookupLoading || !lookupQuery.trim()}
+                    className={cn(
+                      "border-0 rounded-xl px-5 text-xl font-bold",
+                      lookupLoading || !lookupQuery.trim()
+                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
+                        : "bg-[#d4a853] text-zinc-950"
+                    )}>
+                    {lookupLoading ? "…" : "→"}
+                  </button>
+                </div>
+                {!lookupAnswer && !lookupLoading && (
+                  <div>
+                    <div className="text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Try asking</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        "What's the difference between memory foam and hybrid?",
+                        "How to clean microfiber sofa?",
+                        "What size rug for a 12x14 living room?",
+                        "Solid wood vs engineered wood pros and cons",
+                        "What's a good sofa frame to look for?",
+                      ].map(q => (
+                        <button key={q} onClick={() => { setLookupQuery(q); runLookup(q); }}
+                          className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full px-3 py-1.5 text-zinc-500 dark:text-zinc-400 text-xs text-left">
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {lookupLoading && (
+                  <div className="text-center text-zinc-400 dark:text-zinc-500 mt-10">
+                    <div className="text-3xl mb-2">✨</div>
+                    <div className="text-sm">Looking that up…</div>
+                  </div>
+                )}
+                {lookupAnswer && (
+                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mt-1">
+                    <div className="text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2.5">Answer</div>
+                    <div className="text-sm text-zinc-900 dark:text-zinc-100 leading-7 whitespace-pre-wrap">{lookupAnswer}</div>
+                    <button onClick={() => { setLookupAnswer(null); setLookupQuery(""); lookupInputRef.current?.focus(); }}
+                      className="mt-3.5 bg-transparent border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 py-1.5 text-zinc-500 dark:text-zinc-400 text-xs">
+                      Ask another
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Customer Interest QR ──────────────────────────────── */}
+            {view === "qr" && (
+              <div className="px-4 py-4">
+                {!myInfo.phone ? (
+                  <div className="text-center py-10 px-5">
+                    <div className="text-5xl mb-3.5">📵</div>
+                    <div className="text-[17px] font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Add your phone number first</div>
+                    <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed">
+                      Customers need your number to text you. Add it in Settings.
+                    </div>
+                    <button onClick={() => setShowMyInfo(true)}
+                      className="bg-[#d4a853] text-zinc-950 border-0 rounded-xl px-7 py-3.5 text-[15px] font-semibold">
+                      Open Settings
+                    </button>
+                  </div>
+                ) : qrShowCode ? (
+                  /* ── Step 2: Show QR to customer ── */
+                  <div className="flex flex-col items-center">
+                    <div className="text-center mb-3">
+                      <div className="text-[22px] text-[#d4a853]" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                        Scan or Photograph
+                      </div>
+                      <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        {qrCustomerName ? `For ${qrCustomerName} — ` : ""}Scan to text, or photo for later
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-3xl p-5 shadow-xl mb-4">
+                      {smsQrUrl ? (
+                        <img src={smsQrUrl} alt="Scan to text me"
+                          className="w-[260px] h-[260px] block rounded-lg" />
+                      ) : (
+                        <div className="w-[260px] h-[260px] flex items-center justify-center text-zinc-400 text-sm">
+                          Generating…
+                        </div>
+                      )}
+                    </div>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 max-w-[320px] w-full mb-2">
+                      <div className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Message they'll send you</div>
+                      <div className="bg-green-500 rounded-[14px_14px_4px_14px] px-3.5 py-2.5 inline-block max-w-full">
+                        <div className="text-sm text-white leading-relaxed">{qrSmsBody}</div>
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center mb-5">
+                      Texts sent to {myInfo.phone}
+                    </div>
+                    <button onClick={() => setQrShowCode(false)}
+                      className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-0 rounded-xl px-7 py-3 text-base font-medium">
+                      ← Edit Info
+                    </button>
+                  </div>
+                ) : (
+                  /* ── Step 1: Fill in customer info ── */
+                  <div>
+                    <div className="text-[22px] text-[#d4a853] mb-0.5" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                      Customer Interest Card
+                    </div>
+                    <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-5">
+                      Note what they're looking at, then show them the QR
+                    </div>
+
+                    {/* Customer name */}
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 px-1">Customer Name</div>
+                    <input
+                      value={qrCustomerName}
+                      onChange={e => setQrCustomerName(e.target.value)}
+                      placeholder="Their first name (optional)…"
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-base text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500 mb-4"
+                      style={{ caretColor: "#d4a853" }}
+                    />
+
+                    {/* Selected items */}
+                    {qrItems.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {qrItems.map(item => (
+                          <span key={item}
+                            className="bg-[#d4a853] text-zinc-950 rounded-full px-3 py-1.5 text-sm font-medium flex items-center gap-1.5">
+                            {item}
+                            <button
+                              onClick={() => setQrItems(prev => prev.filter(i => i !== item))}
+                              className="text-zinc-950/60 border-0 bg-transparent p-0 leading-none text-xs font-bold">
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Category chips */}
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 px-1">What they're looking at</div>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {categories.map(cat => (
+                        <button key={cat}
+                          onClick={() => setQrItems(prev =>
+                            prev.includes(cat) ? prev.filter(i => i !== cat) : [...prev, cat]
+                          )}
+                          className={cn(
+                            "border rounded-full px-3 py-1.5 text-xs font-medium",
+                            qrItems.includes(cat)
+                              ? "bg-[#d4a853] text-zinc-950 border-[#d4a853]"
+                              : "bg-transparent text-zinc-500 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700"
+                          )}>
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Custom item input */}
+                    <div className="flex gap-2 mb-5">
+                      <input
+                        value={qrNewItem}
+                        onChange={e => setQrNewItem(e.target.value)}
+                        onKeyDown={e => {
+                          const v = qrNewItem.trim();
+                          if (e.key === "Enter" && v && !qrItems.includes(v)) {
+                            setQrItems(prev => [...prev, v]);
+                            setQrNewItem("");
+                          }
+                        }}
+                        placeholder="Other item…"
+                        className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+                        style={{ caretColor: "#d4a853" }}
+                      />
+                      <button
+                        onClick={() => {
+                          const v = qrNewItem.trim();
+                          if (v && !qrItems.includes(v)) { setQrItems(prev => [...prev, v]); setQrNewItem(""); }
+                        }}
+                        disabled={!qrNewItem.trim()}
+                        className="bg-[#d4a853] text-zinc-950 border-0 rounded-xl px-4 text-sm font-semibold disabled:opacity-40">
+                        Add
+                      </button>
+                    </div>
+
+                    {/* Message preview */}
+                    {(qrItems.length > 0 || qrCustomerName) && (
+                      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 mb-5">
+                        <div className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Message preview</div>
+                        <div className="bg-green-500 rounded-[14px_14px_4px_14px] px-3.5 py-2.5 inline-block max-w-full">
+                          <div className="text-sm text-white leading-relaxed">{qrSmsBody}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setQrShowCode(true)}
+                      className="w-full bg-[#d4a853] text-zinc-950 border-0 rounded-xl py-4 text-[17px] font-semibold tracking-tight">
+                      Show QR Code →
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── Bottom tab bar ────────────────────────────────────────── */}
+          <nav className="fixed bottom-0 inset-x-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 flex z-50"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+            {[
+              { icon: "👥", label: "Contacts", onClick: () => setView("dashboard"),                              active: view === "dashboard" },
+              { icon: "🔳", label: "Get #",    onClick: () => navTo("qr"),                                      active: view === "qr" },
+              { icon: "＋", label: "Add",       onClick: () => navTo("add"),                                     active: view === "add", ariaLabel: "+" },
+              { icon: "🔔", label: overdue > 0 ? `${overdue}` : "Alerts", onClick: () => { setFilter("overdue"); setView("dashboard"); }, active: filter === "overdue" && view === "dashboard", urgent: overdue > 0 },
+              { icon: "🔍", label: "Lookup",   onClick: () => setView("lookup"),                                 active: view === "lookup" },
+            ].map(tab => (
+              <button key={tab.label} onClick={tab.onClick} aria-label={tab.ariaLabel}
+                className={cn(
+                  "flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] border-0 bg-transparent",
+                  tab.active
+                    ? "text-[#d4a853] font-bold"
+                    : tab.urgent
+                      ? "text-red-500 font-normal"
+                      : "text-zinc-400 dark:text-zinc-500 font-normal"
+                )}>
+                <span className="text-[22px] leading-none">{tab.icon}</span>
+                <span className={cn("tracking-tight", tab.urgent ? "text-[11px]" : "text-[10px]")}>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </>
       )}
     </div>
   );

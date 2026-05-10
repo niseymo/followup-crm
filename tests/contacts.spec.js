@@ -1,6 +1,6 @@
 // tests/contacts.spec.js
 import { test, expect } from '@playwright/test'
-import { clearStorage, seedMyInfo, seedContact, getFutureDate, getPastDate } from './helpers.js'
+import { clearStorage, seedMyInfo, seedContact, getFutureDate, getPastDate, getTodayDate } from './helpers.js'
 
 test.describe('Contact Management', () => {
   test.beforeEach(async ({ page }) => {
@@ -93,9 +93,8 @@ test.describe('Contact Management', () => {
   })
 
   test('follow-up due today shows Today badge', async ({ page }) => {
-    const today = new Date().toISOString().split('T')[0]
-    await seedContact(page, { name: 'Today Person', followUpDate: today })
-    await expect(page.getByText('Today')).toBeVisible()
+    await seedContact(page, { name: 'DueTodayPerson', followUpDate: getTodayDate() })
+    await expect(page.locator('[data-testid="urgency-badge"]')).toHaveText('Today')
   })
 
   // ─── Stat counters ──────────────────────────────────────────────────────────
