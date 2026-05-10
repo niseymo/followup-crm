@@ -118,6 +118,7 @@ export default function App() {
   const waitingSWRef = useRef(null);
   const [showQR,         setShowQR]         = useState(false);
   const [qrDataUrl,      setQrDataUrl]      = useState(null);
+  const [smsQrUrl,       setSmsQrUrl]       = useState(null);
   const [lastExportedAt, setLastExportedAt] = useState(null);
   // Skip the first save-effect run — it fires with default state before the load effect's
   // setState calls have been applied, which would overwrite saved data with empty defaults.
@@ -247,6 +248,16 @@ export default function App() {
     });
     navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload());
   }, []);
+
+  useEffect(() => {
+    if (view !== "qr" || !myInfo.phone) { setSmsQrUrl(null); return; }
+    const phone = myInfo.phone.replace(/\D/g, "");
+    const e164  = phone.length === 10 ? `+1${phone}` : `+${phone}`;
+    const body  = `Hi ${myInfo.name || "there"}! Just visited ${myInfo.store || "the store"} today — wanted to stay in touch 😊`;
+    QRCode.toDataURL(`sms:${e164}?body=${encodeURIComponent(body)}`, {
+      width: 300, margin: 2, color: { dark: "#000000", light: "#ffffff" },
+    }).then(setSmsQrUrl).catch(() => showToast("Could not generate QR", "error"));
+  }, [view, myInfo.phone, myInfo.name, myInfo.store]);
 
   function applyUpdate() {
     waitingSWRef.current?.postMessage({ type: "SKIP_WAITING" });
@@ -767,10 +778,11 @@ export default function App() {
           {/* Nav */}
           <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 20 }}>
             {[
-              { icon: "📋", label: "Contacts",   active: view === "dashboard", action: () => navTo("dashboard") },
-              { icon: "➕", label: "Add Contact", active: view === "add",       action: () => navTo("add") },
+              { icon: "📋", label: "Contacts",        active: view === "dashboard", action: () => navTo("dashboard") },
+              { icon: "➕", label: "Add Contact",      active: view === "add",       action: () => navTo("add") },
+              { icon: "🔳", label: "Get Number (QR)", active: view === "qr",        action: () => navTo("qr") },
               { icon: "🔔", label: `Follow-ups${overdue > 0 ? ` (${overdue})` : ""}`, active: false, action: () => { setFilter("overdue"); setView("dashboard"); }, urgent: overdue > 0 },
-              { icon: "🔍", label: "Lookup",      active: view === "lookup",    action: () => navTo("lookup") },
+              { icon: "🔍", label: "Lookup",           active: view === "lookup",    action: () => navTo("lookup") },
             ].map(item => (
               <button key={item.label} onClick={item.action}
                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 10, border: "none", background: item.active ? "#d4a85322" : "none", color: item.active ? "#d4a853" : item.urgent ? "#e74c3c" : th.textMuted, fontSize: 14, fontWeight: item.active ? 600 : 400, textAlign: "left", width: "100%" }}>
@@ -864,7 +876,7 @@ export default function App() {
           <div style={{ padding: "24px 28px 0", borderBottom: `1px solid ${th.border}`, paddingBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
               <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#d4a853" }}>
-                {view === "dashboard" ? "Contacts" : view === "add" ? (editId ? "Edit Contact" : "New Contact") : "Furniture Lookup"}
+                {view === "dashboard" ? "Contacts" : view === "add" ? (editId ? "Edit Contact" : "New Contact") : view === "qr" ? "Get Customer Number" : "Furniture Lookup"}
               </div>
               {view === "dashboard" && (
                 <input value={search} onChange={e => setSearch(e.target.value)}
@@ -1048,28 +1060,98 @@ export default function App() {
             )}
           </div>
         )}
+
+        {/* ── Get Number QR view ─────────────────────────────────────────── */}
+        {view === "qr" && (
+          <div style={{ padding: isDesktop ? "24px 28px" : "16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {!isDesktop && (
+              <div style={{ textAlign: "center", marginBottom: 8, width: "100%" }}>
+                <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#d4a853" }}>Get Their Number</div>
+                <div style={{ fontSize: 13, color: th.textMuted, marginTop: 3 }}>Have your customer scan this with their camera</div>
+              </div>
+            )}
+
+            {!myInfo.phone ? (
+              <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                <div style={{ fontSize: 48, marginBottom: 14 }}>📵</div>
+                <div style={{ fontSize: 17, fontWeight: 600, color: th.text, marginBottom: 8 }}>Add your phone number first</div>
+                <div style={{ fontSize: 13, color: th.textMuted, marginBottom: 24, lineHeight: 1.5 }}>
+                  Customers need your number to text you. Add it in Settings.
+                </div>
+                <button onClick={() => setShowMyInfo(true)}
+                  style={{ background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: 10, padding: "13px 28px", fontSize: 15, fontWeight: 600 }}>
+                  Open Settings
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* QR code on white card — high contrast for easy scanning */}
+                <div style={{ background: "#ffffff", borderRadius: 24, padding: 20, margin: "12px 0 16px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {smsQrUrl ? (
+                    <img src={smsQrUrl} alt="Scan to text me"
+                      style={{ width: 260, height: 260, display: "block", borderRadius: 8 }} />
+                  ) : (
+                    <div style={{ width: 260, height: 260, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: 13 }}>
+                      Generating…
+                    </div>
+                  )}
+                </div>
+
+                {/* Step instructions */}
+                <div style={{ textAlign: "center", maxWidth: 300, marginBottom: 16 }}>
+                  <div style={{ fontSize: 17, fontWeight: 600, color: th.text, marginBottom: 6 }}>
+                    📷 Scan → tap Send
+                  </div>
+                  <div style={{ fontSize: 13, color: th.textMuted, lineHeight: 1.6 }}>
+                    Opens a pre-written text to {myInfo.name || "you"}.<br />
+                    Customer just hits <strong>Send</strong> — you get their number instantly.
+                  </div>
+                </div>
+
+                {/* Message preview bubble */}
+                <div style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 16, padding: "12px 16px", maxWidth: 320, width: "100%", marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, color: th.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Message they'll send you</div>
+                  <div style={{ background: "#34c759", borderRadius: "14px 14px 4px 14px", padding: "10px 14px", display: "inline-block", maxWidth: "100%" }}>
+                    <div style={{ fontSize: 14, color: "#ffffff", lineHeight: 1.5 }}>
+                      Hi {myInfo.name || "there"}! Just visited {myInfo.store || "the store"} today — wanted to stay in touch 😊
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: 11, color: th.textDimmer, textAlign: "center" }}>
+                  Texts sent to {myInfo.phone}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Mobile bottom nav (hidden on desktop) ─────────────────────────── */}
       {!isDesktop && (
-        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: th.surface, borderTop: `1px solid ${th.border}`, display: "flex", padding: "10px 20px 0", paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", zIndex: 50 }}>
+        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: th.surface, borderTop: `1px solid ${th.border}`, display: "flex", padding: "10px 8px 0", paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", zIndex: 50 }}>
           <button onClick={() => setView("dashboard")}
-            style={{ flex: 1, background: "none", border: "none", color: view === "dashboard" ? "#d4a853" : th.textDim, fontSize: 12, fontWeight: 500, padding: "6px 0" }}>
-            <div style={{ fontSize: 22 }}>📋</div>
+            style={{ flex: 1, background: "none", border: "none", color: view === "dashboard" ? "#d4a853" : th.textDim, fontSize: 11, fontWeight: 500, padding: "6px 0" }}>
+            <div style={{ fontSize: 20 }}>📋</div>
             Contacts
           </button>
+          <button onClick={() => setView("qr")}
+            style={{ flex: 1, background: "none", border: "none", color: view === "qr" ? "#d4a853" : th.textDim, fontSize: 11, fontWeight: 500, padding: "6px 0" }}>
+            <div style={{ fontSize: 20 }}>🔳</div>
+            Get #
+          </button>
           <button onClick={() => navTo("add")}
-            style={{ flex: "0 0 60px", background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: "50%", width: 56, height: 56, fontSize: 28, fontWeight: 700, margin: "-20px auto 0", boxShadow: "0 4px 20px rgba(212,168,83,0.4)" }}>
+            style={{ flex: "0 0 56px", background: "#d4a853", color: "#0f0f13", border: "none", borderRadius: "50%", width: 52, height: 52, fontSize: 26, fontWeight: 700, margin: "-18px auto 0", boxShadow: "0 4px 20px rgba(212,168,83,0.4)" }}>
             +
           </button>
-          <button onClick={() => setFilter("overdue")}
-            style={{ flex: 1, background: "none", border: "none", color: overdue > 0 ? "#e74c3c" : th.textDim, fontSize: 12, fontWeight: 500, padding: "6px 0" }}>
-            <div style={{ fontSize: 22 }}>🔔</div>
-            {overdue > 0 ? `${overdue} Overdue` : "Follow-ups"}
+          <button onClick={() => { setFilter("overdue"); setView("dashboard"); }}
+            style={{ flex: 1, background: "none", border: "none", color: overdue > 0 ? "#e74c3c" : th.textDim, fontSize: 11, fontWeight: 500, padding: "6px 0" }}>
+            <div style={{ fontSize: 20 }}>🔔</div>
+            {overdue > 0 ? `${overdue}!` : "Follow-ups"}
           </button>
           <button onClick={() => setView("lookup")}
-            style={{ flex: 1, background: "none", border: "none", color: view === "lookup" ? "#d4a853" : th.textDim, fontSize: 12, fontWeight: 500, padding: "6px 0" }}>
-            <div style={{ fontSize: 22 }}>🔍</div>
+            style={{ flex: 1, background: "none", border: "none", color: view === "lookup" ? "#d4a853" : th.textDim, fontSize: 11, fontWeight: 500, padding: "6px 0" }}>
+            <div style={{ fontSize: 20 }}>🔍</div>
             Lookup
           </button>
         </div>
