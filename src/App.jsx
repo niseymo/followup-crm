@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";
+import { db } from "./db.js";
 
+// Kept only for one-time migration of existing localStorage data.
 const STORAGE_KEY = "furniture_crm_v1";
 const DISMISS_KEY = "followup_backup_dismissed_until";
 
@@ -149,66 +151,84 @@ export default function App() {
   }
 
   useEffect(() => {
-    // Verify localStorage is available (disabled in some private/incognito modes).
-    try {
-      localStorage.setItem("__ls_test__", "1");
-      localStorage.removeItem("__ls_test__");
-    } catch {
-      showToast("Storage unavailable — data will not be saved this session", "error");
-      return;
-    }
-
-    try {
+    async function load() {
+      // One-time migration: if localStorage has existing data and Dexie is empty, import it.
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw);
-      if (saved.contacts)      setContacts(saved.contacts);
-      if (saved.profiles) {
-        setProfiles(saved.profiles);
-        if (saved.activeProfileId) setActiveProfileId(saved.activeProfileId);
-      } else if (saved.myInfo) {
-        setProfiles([{ id: "default", ...defaultMyInfo, ...saved.myInfo }]);
-        setActiveProfileId("default");
+      if (raw) {
+        try {
+          const saved = JSON.parse(raw);
+          const puts = [];
+          if (saved.contacts?.length) await db.contacts.bulkPut(saved.contacts);
+          if (saved.profiles)        puts.push({ key: "profiles",        value: saved.profiles });
+          else if (saved.myInfo)     puts.push({ key: "profiles",        value: [{ id: "default", ...defaultMyInfo, ...saved.myInfo }] });
+          if (saved.activeProfileId) puts.push({ key: "activeProfileId", value: saved.activeProfileId });
+          if (saved.msgTemplate)     puts.push({ key: "msgTemplate",     value: saved.msgTemplate });
+          if (saved.themeMode)       puts.push({ key: "themeMode",       value: saved.themeMode });
+          if (saved.categories)      puts.push({ key: "categories",      value: saved.categories });
+          if (saved.lastExportedAt)  puts.push({ key: "lastExportedAt",  value: saved.lastExportedAt });
+          if (puts.length) await db.settings.bulkPut(puts);
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (err) {
+          console.error("localStorage migration failed:", err);
+        }
       }
-      if (saved.msgTemplate)    setMsgTemplate(saved.msgTemplate);
-      if (saved.themeMode)      setThemeMode(saved.themeMode);
-      if (saved.lastExportedAt) setLastExportedAt(saved.lastExportedAt);
-      setCategories(saved.categories || DEFAULT_CATEGORIES);
 
+      // Load from Dexie.
+      const [storedContacts, profiles, activeId, template, theme, cats, lastExp] = await Promise.all([
+        db.contacts.toArray(),
+        db.settings.get("profiles"),
+        db.settings.get("activeProfileId"),
+        db.settings.get("msgTemplate"),
+        db.settings.get("themeMode"),
+        db.settings.get("categories"),
+        db.settings.get("lastExportedAt"),
+      ]);
+
+      if (storedContacts.length)  setContacts(storedContacts);
+      if (profiles?.value)        setProfiles(profiles.value);
+      if (activeId?.value)        setActiveProfileId(activeId.value);
+      if (template?.value)        setMsgTemplate(template.value);
+      if (theme?.value)           setThemeMode(theme.value);
+      if (lastExp?.value)         setLastExportedAt(lastExp.value);
+      setCategories(cats?.value || DEFAULT_CATEGORIES);
+
+      // Backup banner.
       const dismissedUntil = localStorage.getItem(DISMISS_KEY);
       const now = Date.now();
-      if (dismissedUntil && now < Number(dismissedUntil)) return;
-      const lastExport = saved.lastExportedAt ? new Date(saved.lastExportedAt).getTime() : 0;
-      if (now - lastExport > 7 * 24 * 60 * 60 * 1000) setShowBackupBanner(true);
-    } catch (err) {
-      console.error("Failed to load saved data:", err);
-      showToast("Could not read saved data — storage may be corrupt", "error");
-    }
+      if (!dismissedUntil || now >= Number(dismissedUntil)) {
+        const lastExport = lastExp?.value ? new Date(lastExp.value).getTime() : 0;
+        if (now - lastExport > 7 * 24 * 60 * 60 * 1000) setShowBackupBanner(true);
+      }
 
-    // Warn if storage is getting full (>80% used).
-    if (navigator.storage?.estimate) {
-      navigator.storage.estimate().then(({ usage, quota }) => {
+      // Warn if storage is getting full (>80% used).
+      if (navigator.storage?.estimate) {
+        const { usage, quota } = await navigator.storage.estimate();
         if (usage / quota > 0.8) {
-          const pct = Math.round((usage / quota) * 100);
-          showToast(`Storage ${pct}% full — export a backup soon`, "error");
+          showToast(`Storage ${Math.round((usage / quota) * 100)}% full — export a backup soon`, "error");
         }
-      });
+      }
     }
+    load().catch(err => {
+      console.error("Failed to load saved data:", err);
+      showToast("Could not read saved data", "error");
+    });
   }, []);
 
   useEffect(() => {
     if (saveSkipRef.current) { saveSkipRef.current = false; return; }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        contacts, profiles, activeProfileId, msgTemplate, themeMode, categories, lastExportedAt,
-      }));
-    } catch (err) {
-      if (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED") {
-        showToast("Storage full — export a backup to free space", "error");
-      } else {
-        showToast("Could not save changes — check browser storage settings", "error");
-      }
-    }
+    const onQuota = (err) => {
+      if (err.name === "QuotaExceededError") showToast("Storage full — export a backup to free space", "error");
+      else showToast("Could not save changes", "error");
+    };
+    db.contacts.bulkPut(contacts).catch(onQuota);
+    db.settings.bulkPut([
+      { key: "profiles",        value: profiles },
+      { key: "activeProfileId", value: activeProfileId },
+      { key: "msgTemplate",     value: msgTemplate },
+      { key: "themeMode",       value: themeMode },
+      { key: "categories",      value: categories },
+      { key: "lastExportedAt",  value: lastExportedAt },
+    ]).catch(onQuota);
   }, [contacts, profiles, activeProfileId, msgTemplate, themeMode, categories, lastExportedAt]);
 
   useEffect(() => {
@@ -268,7 +288,7 @@ export default function App() {
   }
   function markTexted(id)  { setContacts(cs => cs.map(c => c.id === id ? { ...c, texted: true } : c)); showToast("Marked as texted ✓"); }
   function markDone(id)    { setContacts(cs => cs.map(c => c.id === id ? { ...c, done: true }   : c)); showToast("Marked complete"); }
-  function deleteContact(id) { setContacts(cs => cs.filter(c => c.id !== id)); showToast("Deleted"); }
+  function deleteContact(id) { setContacts(cs => cs.filter(c => c.id !== id)); db.contacts.delete(id); showToast("Deleted"); }
   function editContact(c) {
     const days = Math.max(1, daysUntil(c.followUpDate));
     setForm({ name: c.name, phone: c.phone, interest: c.interest, notes: c.notes, followUpDays: days });
@@ -317,10 +337,12 @@ export default function App() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
         const parsed = JSON.parse(ev.target.result);
         if (!parsed.contacts) return showToast("Invalid backup file", "error");
+        // Clear existing Dexie contacts before restore so old records don't persist.
+        await db.contacts.clear();
         setContacts(parsed.contacts);
         if (parsed.profiles) {
           setProfiles(parsed.profiles);
