@@ -653,19 +653,28 @@ export default function App() {
         fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
         background: th.appBg,
         color: th.text,
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: isDesktop ? "flex" : "block",
-        // Mobile: centered narrow column; desktop: full viewport
         maxWidth: isDesktop ? "none" : 480,
         margin: isDesktop ? 0 : "0 auto",
+        // Push content below Dynamic Island / notch on mobile PWA
+        paddingTop: isDesktop ? 0 : "env(safe-area-inset-top)",
       }}>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap');
-        * { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body {
+          background: ${th.appBg};
+          overscroll-behavior-y: contain;
+          -webkit-tap-highlight-color: transparent;
+          min-height: 100dvh;
+        }
         input, select, textarea { font-family: inherit; }
-        button { cursor: pointer; font-family: inherit; }
-        a { font-family: inherit; }
+        button { cursor: pointer; font-family: inherit; touch-action: manipulation; }
+        a { font-family: inherit; touch-action: manipulation; }
+        input, select, textarea, button { -webkit-appearance: none; appearance: none; }
+        select { background-image: none; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: ${th.scrollTrack}; }
         ::-webkit-scrollbar-thumb { background: ${th.scrollThumb}; border-radius: 2px; }
@@ -678,7 +687,7 @@ export default function App() {
 
       {/* ── Toast ─────────────────────────────────────────────────────────── */}
       {toast && (
-        <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#c0392b" : "#1e7e5a", color: "#fff", padding: "10px 20px", borderRadius: 10, zIndex: 9999, fontSize: 14, fontWeight: 500, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }}>
+        <div style={{ position: "fixed", top: "max(calc(env(safe-area-inset-top) + 8px), 16px)", left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#c0392b" : "#1e7e5a", color: "#fff", padding: "10px 20px", borderRadius: 10, zIndex: 9999, fontSize: 14, fontWeight: 500, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap", maxWidth: "calc(100vw - 40px)", textAlign: "center" }}>
           {toast.msg}
         </div>
       )}
@@ -718,7 +727,8 @@ export default function App() {
             maxWidth: isDesktop ? 560 : 480,
             borderRadius: isDesktop ? 16 : "20px 20px 0 0",
             padding: 24,
-            maxHeight: isDesktop ? "90vh" : "92vh",
+            paddingBottom: isDesktop ? 24 : "calc(env(safe-area-inset-bottom) + 24px)",
+            maxHeight: isDesktop ? "90dvh" : "92dvh",
             overflowY: "auto",
             margin: isDesktop ? "0 16px" : "0 auto",
           }}>
@@ -806,9 +816,9 @@ export default function App() {
       <div style={{
         flex: 1,
         minWidth: 0,
-        height: isDesktop ? "100vh" : "auto",
+        height: isDesktop ? "100dvh" : "auto",
         overflowY: isDesktop ? "auto" : "visible",
-        paddingBottom: isDesktop ? 0 : 80,
+        paddingBottom: isDesktop ? 0 : "calc(env(safe-area-inset-bottom) + 90px)",
       }}>
         {Banners}
 
@@ -1042,7 +1052,7 @@ export default function App() {
 
       {/* ── Mobile bottom nav (hidden on desktop) ─────────────────────────── */}
       {!isDesktop && (
-        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: th.surface, borderTop: `1px solid ${th.border}`, display: "flex", padding: "10px 20px 16px", zIndex: 50 }}>
+        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: th.surface, borderTop: `1px solid ${th.border}`, display: "flex", padding: "10px 20px 0", paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", zIndex: 50 }}>
           <button onClick={() => setView("dashboard")}
             style={{ flex: 1, background: "none", border: "none", color: view === "dashboard" ? "#d4a853" : th.textDim, fontSize: 12, fontWeight: 500, padding: "6px 0" }}>
             <div style={{ fontSize: 22 }}>📋</div>
